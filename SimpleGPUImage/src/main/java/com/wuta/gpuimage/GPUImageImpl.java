@@ -3,12 +3,14 @@ package com.wuta.gpuimage;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
+import android.view.MotionEvent;
 
 
 import com.wuta.gpuimage.convert.GPUImageConvertor;
@@ -154,7 +156,66 @@ public class GPUImageImpl implements IGPUImage
         }
         mImageConvertor.initialize();
     }
+    @Override
+    public void setFocus(MotionEvent event)
+    {
+        setFocus(event, mCamera);
+    }
+    @Override
+    public void setFocus(MotionEvent event, Camera mCamera)
+    {
+        int AREA_SIZE = 200;
+        mCamera.cancelAutoFocus();
+        Camera.Parameters p = mCamera.getParameters();
+        Log.e("setFocus","getRawX "+event.getRawX()+"   getRawY "+event.getRawY());
+        Log.e("mOutput","mOutputWidth "+mOutputWidth+"  mOutputHeight: "+mOutputHeight);
+        float touchX = (event.getRawX() / mOutputWidth) * 2000 - 1000;
+        float touchY = (event.getRawY() / mOutputHeight) * 2000 - 1000;
+        int left = clamp((int) touchX - AREA_SIZE / 2, -1000, 1000);
+        int right = clamp(left + AREA_SIZE, -1000, 1000);
+        int top = clamp((int) touchY - AREA_SIZE / 2, -1000, 1000);
+        int bottom = clamp(top + AREA_SIZE, -1000, 1000);
+        Rect rect = new Rect(left, top, right, bottom);
+        Log.e("axis parameters"," "+left+", "+right+", "+top+", "+bottom+" p.getMaxNumFocusAreas() "+p.getMaxNumFocusAreas());
+        if (p.getMaxNumFocusAreas() > 0) {
+            List<Camera.Area> areaList = new ArrayList<Camera.Area>();
+            areaList.add(new Camera.Area(rect, 1000));
+            p.setFocusAreas(areaList);
+        }
+        List<Camera.Area> area = new ArrayList<Camera.Area>();
+        area = p.getFocusAreas();
+        Rect rect2 = area.get(0).rect;
+        Log.e("area"," "+rect2.left+" "+rect2.right+" "+rect2.top+" "+rect2.bottom);
+        if (p.getMaxNumMeteringAreas() > 0) {
+            List<Camera.Area> areaList = new ArrayList<Camera.Area>();
+            areaList.add(new Camera.Area(rect, 1000));
+            p.setMeteringAreas(areaList);
+        }
+        final String currentFocusMode = p.getFocusMode();
+        p.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        try {
+            mCamera.setParameters(p);
+        } catch (Exception e) {
 
+        }
+        mCamera.autoFocus(new Camera.AutoFocusCallback() {
+            @Override
+            public void onAutoFocus(boolean success, Camera camera) {
+                //Camera.Parameters params = camera.getParameters();
+                //params.setFocusMode(currentFocusMode);
+                //camera.setParameters(params);
+            }
+        });
+    }
+    private int clamp(int x, int min, int max) {//保证坐标必须在min到max之内，否则异常
+        if (x > max) {
+            return max;
+        }
+        if (x < min) {
+            return min;
+        }
+        return x;
+    }
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mOutputWidth = width;

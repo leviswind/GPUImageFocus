@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.opengl.GLSurfaceView;
+import android.util.EventLog;
+import android.view.MotionEvent;
 
 import com.wuta.gpuimage.exfilters.GPUImageDrawFilter;
 import com.wuta.gpuimage.exfilters.GPUImageDrawFilter2;
@@ -38,6 +40,9 @@ public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallbac
     void setBackgroundColor(float red, float green, float blue);
 
     void requestRender();
+
+    void setFocus(MotionEvent event, Camera camera);
+    void setFocus(MotionEvent event);
 
     void destroy();
 }

@@ -2,6 +2,7 @@ package com.wuta.demo;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.opengl.GLSurfaceView;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.util.Log;
 import android.view.WindowManager;
 import android.view.View.OnTouchListener;
 
@@ -24,7 +26,9 @@ import com.wuta.gpuimage.exfilters.GPUImageDrawFilter2;
 import com.wuta.gpuimage.exfilters.GPUImageSampleFilter;
 import com.wuta.gpuimage.exfilters.GPUImageSwirlFilter;
 
-public class MainActivity extends AppCompatActivity
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements OnTouchListener
 {
 
 //    private GPUImage mGPUImage;
@@ -46,7 +50,7 @@ public class MainActivity extends AppCompatActivity
 //        mFilter = new GPUImageSampleFilter();
 //        mGPUImage = new GPUImage(this, (GLSurfaceView) findViewById(R.id.surfaceView));
 //        mGPUImage.setFilter(mFilter);
-
+        view.setOnTouchListener(this);
         mFilter = new GPUImageSwirlFilter();
 
         //mDrawFilter = new GPUImageDrawFilter();
@@ -79,5 +83,12 @@ public class MainActivity extends AppCompatActivity
     protected void onPause() {
         mCameraLoader.onPause();
         super.onPause();
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        Log.e("Camera","entering to the onTouch events");
+        mIGPUImage.setFocus(event);
+        return false;
     }
 }
