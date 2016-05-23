@@ -3,9 +3,11 @@ package com.wuta.gpuimage;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.media.FaceDetector;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -21,6 +23,9 @@ import com.wuta.gpuimage.util.FPSMeter;
 import com.wuta.gpuimage.util.OpenGlUtils;
 import com.wuta.gpuimage.util.TextureRotationUtil;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -88,6 +93,7 @@ public class GPUImageImpl implements IGPUImage
     private final FloatBuffer mGLTextureBuffer;
     private Vector<GPUImageFilter> vec= new Vector<GPUImageFilter>();
     private GPUImageFrameBuffer mFrameBuffer;
+    private boolean flag = true;
 
     private int mOutputWidth;
     private int mOutputHeight;
@@ -102,6 +108,24 @@ public class GPUImageImpl implements IGPUImage
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
     private Triangle mTriangle;
+    private Bitmap bitmap;
+    private FaceDetector FD;
+    private FaceDetector.Face[] faces;
+    private PointF midpoint = new PointF();
+    private int [] fpx = null;
+    private static int MAX_FACES = 2;
+    private int [] fpy = null;
+    private Triangle mFaceTriangle;
+    private  float triangleCoords[] = {   // in counterclockwise order:
+            0.0f,  0.0f,
+            -0.5f, 0.0f,
+            -0.5f, -0.5f,
+            0.0f,-0.5f,
+            0.0f,0.0f
+    };
+
+    // Set color with red, green, blue and alpha (opacity) values
+    private float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
 
     private int mCount;
 
@@ -140,8 +164,8 @@ public class GPUImageImpl implements IGPUImage
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
 
+        //FD = new FaceDetector(mOutputWidth,mOutputHeight,MAX_FACES);
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
-
     }
 
 
@@ -158,8 +182,33 @@ public class GPUImageImpl implements IGPUImage
             filter.init();
         }
         mImageConvertor.initialize();
+        mCamera.startPreview();
+        mCamera.startFaceDetection();
+
+        mCamera.setFaceDetectionListener(new Camera.FaceDetectionListener() {
+            @Override
+            public void onFaceDetection(final Camera.Face[] faces, Camera camera) {
+                if(faces.length > 0)
+                {
+                    runOnDraw(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.e("face detector","detected face-------------------------------     "+faces[0].rect.left+"  "+faces[0].rect.top+"   "+
+                                    faces[0].rect.right+"   "+faces[0].rect.bottom);
+
+                            triangleCoords = pixeltotexturecoor(faces[0].rect);
+                            String s = "";
+                            for(int i =0;i<10;i++)
+                                s=s+triangleCoords[i]+",";
+                            Log.e("triagleCoord","("+s+")");
+                        }
+                    });
+                }
+            }
+        });
 
     }
+
     @Override
     public void setFocus(MotionEvent event)
     {
@@ -250,6 +299,7 @@ public class GPUImageImpl implements IGPUImage
 
     @Override
     public void onDrawFrame(GL10 gl) {
+
         FPSMeter.meter("DrawFrame");
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         runAll(mRunOnDraw);
@@ -269,24 +319,8 @@ public class GPUImageImpl implements IGPUImage
         } else if (mCount == 2000) {
 //            GLRecorder.stopRecording();
         }
-        float triangleCoords[] = {   // in counterclockwise order:
-                0.0f,  0.0f,
-                -0.5f, 0.0f,
-                -0.5f, -0.5f,
-                0.0f,-0.5f,
-                0.0f,0.0f
-        };
-
         // Set color with red, green, blue and alpha (opacity) values
-        float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
         mTriangle = new Triangle(triangleCoords,color);
-//        GLRecorder.beginDraw();
-
-        //mDrawFilter.onDrawPicture(mGLVertexTrianglesBuffer, mGLTextureTrianglesBuffer, 2);
-
-        //tempTextureId = mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
-        //tempTextureId = mImageFilter2.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
-        //tempTextureId = mImageFilter3.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
         int size = vec.size();
         int tempTexture;
@@ -299,8 +333,10 @@ public class GPUImageImpl implements IGPUImage
         }
         mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
-//        GLRecorder.endDraw();
         mTriangle.draw();
+
+
+
         runAll(mRunOnDrawEnd);
     }
 
@@ -614,6 +650,24 @@ public class GPUImageImpl implements IGPUImage
         synchronized (mRunOnDrawEnd) {
             mRunOnDrawEnd.add(runnable);
         }
+    }
+
+    public float[] pixeltotexturecoor(Rect rect)
+    {
+
+        float [] coordinate ={transfer(rect.left,rect.top)[0],transfer(rect.left,rect.top)[1],
+                        transfer(rect.left,rect.bottom)[0],transfer(rect.left,rect.bottom)[1],
+                        transfer(rect.right,rect.bottom)[0],transfer(rect.right,rect.bottom)[1],
+                            transfer(rect.right,rect.top)[0],transfer(rect.right,rect.top)[1],
+                            transfer(rect.left,rect.top)[0],transfer(rect.left,rect.top)[1]};
+
+        return coordinate;
+    }
+
+    public float[] transfer(int x, int y)   //pixel to (-1,1)texture coordinate
+    {
+        float [] coordinate1 = {-(float)y/1000,(float)x/1000};
+        return coordinate1;
     }
 
     public enum ScaleType { CENTER_INSIDE, CENTER_CROP }

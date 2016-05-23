@@ -18,6 +18,7 @@ package com.wuta.gpuimage;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.graphics.PointF;
 import android.opengl.GLES20;
 
@@ -59,6 +60,7 @@ public class GPUImageFilter {
     protected int mOutputWidth;
     protected int mOutputHeight;
     protected boolean mIsInitialized;
+    public Bitmap mbitmap =  null;
 
     public GPUImageFilter() {
         this(NO_FILTER_VERTEX_SHADER, NO_FILTER_FRAGMENT_SHADER);

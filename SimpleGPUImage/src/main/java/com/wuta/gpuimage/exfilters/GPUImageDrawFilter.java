@@ -32,6 +32,7 @@ public class GPUImageDrawFilter extends GPUImageFilter {
                 .asFloatBuffer();
         mGLTextureTrianglesBuffer.put(TEXTURE_TRIANGLES).position(0);
     }
+
     public void setTexture(final int Texture)
     {
         mPictureTexture = Texture;
