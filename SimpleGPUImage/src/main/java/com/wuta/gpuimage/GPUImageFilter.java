@@ -24,6 +24,7 @@ import android.opengl.GLES20;
 import com.wuta.gpuimage.util.OpenGlUtils;
 
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.LinkedList;
 
@@ -320,4 +321,6 @@ public class GPUImageFilter {
     }
     public void setTexture(final int Texture){}
     public int onDrawPicture(){return -1;}
+    public int onDrawPicture(ByteBuffer data){return -1;}
+
 }

@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.view.View.OnTouchListener;
 
+
 import com.wuta.demo.camera.CameraLoaderImpl;
 import com.wuta.demo.camera.ICameraLoader;
 import com.wuta.gpuimage.GPUImage;

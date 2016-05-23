@@ -96,4 +96,44 @@ public class GPUImageDrawFilter extends GPUImageFilter {
         mFrameBuffer.showFrameBuffer();
         return mFrameBuffer.getFrameBufferTextureId();
     }
+    public int onDrawPicture(ByteBuffer data) {
+        if(mFrameBuffer==null)
+        {
+            mFrameBuffer = new GPUImageFrameBuffer();
+            mFrameBuffer.create(mOutputWidth,mOutputHeight);
+        }
+        mFrameBuffer.beginDrawToFrameBuffer();
+        GLES20.glUseProgram(getProgram());
+        runPendingOnDrawTasks();
+        if (!mIsInitialized) {
+            return -1;
+        }
+
+        mGLVertexTrianglesBuffer.position(0);
+        GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 8, mGLVertexTrianglesBuffer);
+        GLES20.glEnableVertexAttribArray(mGLAttribPosition);
+
+        mGLTextureTrianglesBuffer.position(0);
+        GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 8, mGLTextureTrianglesBuffer);
+        GLES20.glEnableVertexAttribArray(mGLAttribTextureCoordinate);
+
+        if (getPictureTexture() != OpenGlUtils.NO_TEXTURE) {
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE4);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, getPictureTexture());
+            GLES20.glUniform1i(mGLUniformTexture, 4);
+        }
+
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
+
+        onDrawArraysPre();
+        GLES20.glReadPixels(0,0,mOutputWidth,mOutputHeight,GLES20.GL_RGBA,GLES20.GL_UNSIGNED_INT,data);
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 12);
+        GLES20.glDisableVertexAttribArray(mGLAttribPosition);
+        GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+        mFrameBuffer.showFrameBuffer();
+        return mFrameBuffer.getFrameBufferTextureId();
+    }
 }

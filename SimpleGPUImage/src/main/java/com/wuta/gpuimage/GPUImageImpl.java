@@ -3,6 +3,7 @@ package com.wuta.gpuimage;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
@@ -21,6 +22,7 @@ import com.wuta.gpuimage.util.FPSMeter;
 import com.wuta.gpuimage.util.OpenGlUtils;
 import com.wuta.gpuimage.util.TextureRotationUtil;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,6 +37,8 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
+import android.media.FaceDetector;
+import android.media.FaceDetector.Face;
 
 /**
  * Created by kejin
@@ -100,8 +104,12 @@ public class GPUImageImpl implements IGPUImage
     private float mBackgroundRed = 0;
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
+    private FaceDetector detector;
+    private Face[] faces;
 
     private int mCount;
+    private ByteBuffer mPixelBuf;
+    private Bitmap mBitmap;
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
@@ -137,8 +145,10 @@ public class GPUImageImpl implements IGPUImage
                 .asFloatBuffer();
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
+        mPixelBuf = ByteBuffer.allocate(mOutputWidth*mOutputHeight*4);
+        mPixelBuf.order(ByteOrder.LITTLE_ENDIAN);
+        faces = new Face[2];
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
-
     }
 
 
@@ -201,9 +211,9 @@ public class GPUImageImpl implements IGPUImage
         mCamera.autoFocus(new Camera.AutoFocusCallback() {
             @Override
             public void onAutoFocus(boolean success, Camera camera) {
-                //Camera.Parameters params = camera.getParameters();
-                //params.setFocusMode(currentFocusMode);
-                //camera.setParameters(params);
+                Camera.Parameters params = camera.getParameters();
+                params.setFocusMode(currentFocusMode);
+                camera.setParameters(params);
             }
         });
     }
@@ -221,6 +231,7 @@ public class GPUImageImpl implements IGPUImage
         mOutputWidth = width;
         mOutputHeight = height;
         GLES20.glViewport(0, 0, width, height);
+        detector = new FaceDetector(mOutputWidth,mImageHeight,2);
 
         GLRecorder.init(width, height, mEGLConfig/*Assign in onSurfaceCreated method*/);
         GLRecorder.setRecordOutputFile("/sdcard/glrecord.mp4");     // Set output file path
@@ -280,10 +291,24 @@ public class GPUImageImpl implements IGPUImage
         for(int i=1;i<size;i++)
         {
             vec.get(i).setTexture(tempTextureId);
-            tempTextureId = vec.get(i).onDrawPicture();
+            tempTextureId = vec.get(i).onDrawPicture(mPixelBuf);
         }
-        mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
+        mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+        mBitmap = Bitmap.createBitmap(mOutputWidth, mOutputHeight, Bitmap.Config.ARGB_8888);
+        mPixelBuf.rewind();
+        mBitmap.copyPixelsFromBuffer(mPixelBuf);
+        /*int num = detector.findFaces(mBitmap,faces);
+        PointF point = new PointF();
+        faces[0].getMidPoint(point);
+        Log.e("Detectored Faces","faces number: "+num+" MidPoint"+"("+point.x+","+point.y+")");
+        mBitmap.recycle();
+        mBitmap.copyPixelsFromBuffer(mPixelBuf);/*
+        int num = detector.findFaces(mBitmap,faces);
+        PointF point = new PointF();
+        faces[0].getMidPoint(point);
+        Log.e("Detectored Faces","faces number: "+num+" MidPoint"+"("+point.x+","+point.y+")");
+    */
 //        GLRecorder.endDraw();
 
         runAll(mRunOnDrawEnd);
