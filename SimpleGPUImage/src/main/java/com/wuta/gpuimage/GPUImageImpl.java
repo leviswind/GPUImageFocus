@@ -169,8 +169,9 @@ public class GPUImageImpl implements IGPUImage
         Camera.Parameters p = mCamera.getParameters();
         Log.e("setFocus","getRawX "+event.getRawX()+"   getRawY "+event.getRawY());
         Log.e("mOutput","mOutputWidth "+mOutputWidth+"  mOutputHeight: "+mOutputHeight);
-        float touchX = (event.getRawX() / mOutputWidth) * 2000 - 1000;
-        float touchY = (event.getRawY() / mOutputHeight) * 2000 - 1000;
+
+        float touchY = -(event.getRawX() / mOutputWidth) * 2000 + 1000;
+        float touchX = (event.getRawY() / mOutputHeight) * 2000 - 1000;
         int left = clamp((int) touchX - AREA_SIZE / 2, -1000, 1000);
         int right = clamp(left + AREA_SIZE, -1000, 1000);
         int top = clamp((int) touchY - AREA_SIZE / 2, -1000, 1000);
@@ -183,9 +184,9 @@ public class GPUImageImpl implements IGPUImage
             p.setFocusAreas(areaList);
         }
         List<Camera.Area> area = new ArrayList<Camera.Area>();
-        area = p.getFocusAreas();
-        Rect rect2 = area.get(0).rect;
-        Log.e("area"," "+rect2.left+" "+rect2.right+" "+rect2.top+" "+rect2.bottom);
+        //area = p.getFocusAreas();
+        //Rect rect2 = area.get(0).rect;
+       // Log.e("area"," "+rect2.left+" "+rect2.right+" "+rect2.top+" "+rect2.bottom);
         if (p.getMaxNumMeteringAreas() > 0) {
             List<Camera.Area> areaList = new ArrayList<Camera.Area>();
             areaList.add(new Camera.Area(rect, 1000));
@@ -201,9 +202,9 @@ public class GPUImageImpl implements IGPUImage
         mCamera.autoFocus(new Camera.AutoFocusCallback() {
             @Override
             public void onAutoFocus(boolean success, Camera camera) {
-                //Camera.Parameters params = camera.getParameters();
+                Camera.Parameters params = camera.getParameters();
                 //params.setFocusMode(currentFocusMode);
-                //camera.setParameters(params);
+                camera.setParameters(params);
             }
         });
     }
