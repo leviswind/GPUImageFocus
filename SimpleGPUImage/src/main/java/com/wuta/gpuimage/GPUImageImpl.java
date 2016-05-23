@@ -48,6 +48,7 @@ public class GPUImageImpl implements IGPUImage
 
     public final static float [] CUBE = OpenGlUtils.VERTEX_CUBE;
 
+
     public final static float [] VERTEX_TRIANGLES = OpenGlUtils.VERTEX_TRIANGLES;
 
     public final static float [] TEXTURE_TRIANGLES = OpenGlUtils.TEXTURE_TRIANGLES;
@@ -100,6 +101,7 @@ public class GPUImageImpl implements IGPUImage
     private float mBackgroundRed = 0;
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
+    private Triangle mTriangle;
 
     private int mCount;
 
@@ -137,6 +139,7 @@ public class GPUImageImpl implements IGPUImage
                 .asFloatBuffer();
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
+
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
 
     }
@@ -155,6 +158,7 @@ public class GPUImageImpl implements IGPUImage
             filter.init();
         }
         mImageConvertor.initialize();
+
     }
     @Override
     public void setFocus(MotionEvent event)
@@ -265,7 +269,17 @@ public class GPUImageImpl implements IGPUImage
         } else if (mCount == 2000) {
 //            GLRecorder.stopRecording();
         }
+        float triangleCoords[] = {   // in counterclockwise order:
+                0.0f,  0.0f,
+                -0.5f, 0.0f,
+                -0.5f, -0.5f,
+                0.0f,-0.5f,
+                0.0f,0.0f
+        };
 
+        // Set color with red, green, blue and alpha (opacity) values
+        float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
+        mTriangle = new Triangle(triangleCoords,color);
 //        GLRecorder.beginDraw();
 
         //mDrawFilter.onDrawPicture(mGLVertexTrianglesBuffer, mGLTextureTrianglesBuffer, 2);
@@ -286,7 +300,7 @@ public class GPUImageImpl implements IGPUImage
         mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
 //        GLRecorder.endDraw();
-
+        mTriangle.draw();
         runAll(mRunOnDrawEnd);
     }
 
