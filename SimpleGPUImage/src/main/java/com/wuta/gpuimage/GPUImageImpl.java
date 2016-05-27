@@ -2,11 +2,13 @@ package com.wuta.gpuimage;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.graphics.YuvImage;
 import android.media.FaceDetector;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -184,7 +186,7 @@ public class GPUImageImpl implements IGPUImage
         mImageConvertor.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
-
+        /*
         mCamera.setFaceDetectionListener(new Camera.FaceDetectionListener() {
             @Override
             public void onFaceDetection(final Camera.Face[] faces, Camera camera) {
@@ -205,7 +207,8 @@ public class GPUImageImpl implements IGPUImage
                     });
                 }
             }
-        });
+        });、
+        */
 
     }
 
@@ -355,7 +358,26 @@ public class GPUImageImpl implements IGPUImage
                     adjustImageScaling();
                 }
             });
-        }
+        }/*
+        if(num(20))
+        {
+            File file = new File("/storage/emulated/0/liwei");
+            File file2 = new File("/storage/emulated/0/liwei/1.jpg");
+            file.mkdirs();
+            try{
+                file2.createNewFile();
+            }catch(IOException e)
+            {
+                e.printStackTrace();
+            }
+            YuvImage image = new YuvImage(data, ImageFormat.NV21,1920,1080,null);
+            try{
+                image.compressToJpeg(new Rect(0,0,1920,1080),50,new FileOutputStream(file2));
+            }catch(IOException e)
+            {
+
+            }
+        }*/
 
         if (mRunOnDraw.isEmpty()) {
             runOnDraw(new Runnable() {
@@ -368,6 +390,21 @@ public class GPUImageImpl implements IGPUImage
         }
         else {
             camera.addCallbackBuffer(data);
+        }
+
+
+
+    }
+    static int tmp =0;
+    public boolean num(int i)
+    {
+        if(tmp>i)
+        {
+            tmp =0;
+            return true;
+        }else{
+            tmp++;
+            return false;
         }
     }
 
