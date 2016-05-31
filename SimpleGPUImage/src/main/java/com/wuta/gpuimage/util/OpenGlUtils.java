@@ -100,7 +100,7 @@ public class OpenGlUtils {
             1.0f, 0.0f,
             CENTER[0],CENTER[1],
     };
-    public static final float TEXTURE_TRIANGLES2[] = {
+    public static final float TEXTURE_TRIANGLES2[] = {    //bitmap读进来，直接显示，竖直拿着时的左侧为底边的时候
             1.0f, 1.0f,
             1.0f, 0.0f,
             CENTER[0],CENTER[1],
@@ -128,7 +128,7 @@ public class OpenGlUtils {
             0.0f, 0.0f,
             CENTER[0],CENTER[1],
     };
-    public static final float TEXTURE_TRIANGLES3[] = {
+    public static final float TEXTURE_TRIANGLES3[] = {           //bitmap读进来，顺时针翻转90度
             0.0f, 1.0f,
             1.0f, 1.0f,
             CENTER2[0],CENTER2[1],

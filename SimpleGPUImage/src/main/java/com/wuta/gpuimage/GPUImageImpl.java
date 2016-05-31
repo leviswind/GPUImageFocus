@@ -65,6 +65,8 @@ public class GPUImageImpl implements IGPUImage
 
     public final static float [] TEXTURE_TRIANGLES = OpenGlUtils.TEXTURE_TRIANGLES;
     public final static float [] TEXTURE_TRIANGLES2 = OpenGlUtils.TEXTURE_TRIANGLES2;
+    public final static float [] TEXTURE_TRIANGLES3 = OpenGlUtils.TEXTURE_TRIANGLES3;
+    public final static float [] TEXTURE_TRIANGLES4 = OpenGlUtils.TEXTURE_TRIANGLES4;
 
     protected Context mContext;
     protected GLSurfaceView mGLSurfaceView;
@@ -203,10 +205,10 @@ public class GPUImageImpl implements IGPUImage
         mSaveTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        mSaveTextureBuffer.put(TextureRotationUtil.getRotation(Rotation.ROTATION_180,true,false)).position(0);
+        mSaveTextureBuffer.put(TEXTURE_SAVE).position(0);
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
-        mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES);
+        mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES3);
         addPicture = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2);
         //FD = new FaceDetector(mOutputWidth,mOutputHeight,MAX_FACES);
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
@@ -235,6 +237,7 @@ public class GPUImageImpl implements IGPUImage
         mImageConvertor.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
+        mDrawFilter.setPicture(bitmap);
 
         mCamera.setFaceDetectionListener(new Camera.FaceDetectionListener() {
             @Override
@@ -329,6 +332,8 @@ public class GPUImageImpl implements IGPUImage
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mOutputWidth = width;
         mOutputHeight = height;
+        Log.e("mOutputWidth",""+width);
+        Log.e("mOutputHight",""+height);
         GLES20.glViewport(0, 0, width, height);
 
         GLRecorder.init(width, height, mEGLConfig/*Assign in onSurfaceCreated method*/);
@@ -395,6 +400,7 @@ public class GPUImageImpl implements IGPUImage
             center[0]+=0.01;
             if(center[0]-temp+0.01>1)
                 center[0] = -1;
+
             float TEXTURE_CUBE[] = {
                     -temp+center[0], -temp+center[1],
                     temp+center[0], -temp+center[1],
@@ -405,9 +411,9 @@ public class GPUImageImpl implements IGPUImage
             mPictureBuffer.put(TEXTURE_CUBE).position(0);
             mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
-            mDrawFilter.setPicture(bitmap);
-            mImageFilter.onDraw(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
-            mImageFilter.onDrawFrameBuffer(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
+            int tempTexture2 = mDrawFilter.onDrawPicture();
+            mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(mDrawFilter.getPictureTexture(), mPictureBuffer, mSaveTextureBuffer);
             runAll(mRunOnDrawEnd);
         }
         else
@@ -424,7 +430,7 @@ public class GPUImageImpl implements IGPUImage
                     break;
             }
             mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer, mSaveTextureBuffer);
-            //int tempTextureId; 方法二
+            //int tempTextureId; //方法二,有闪烁错误
             //tempTextureId = addPicture.onDrawPicture();
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
             runAll(mRunOnDrawEnd);
@@ -435,7 +441,7 @@ public class GPUImageImpl implements IGPUImage
             Log.e("save_flag:",""+save_flag);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter.getFrameBufferId());
             bitmapsave = saveChanges();
-            //addPicture.setPicture(bitmapsave);
+           // addPicture.setPicture(bitmapsave);
             File file = new File("/storage/emulated/0/liwei");
             File file2 = new File("/storage/emulated/0/liwei/1.jpg");
             file.mkdirs();
@@ -457,8 +463,6 @@ public class GPUImageImpl implements IGPUImage
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             save_flag = false;
         }
-
-
     }
     public Bitmap saveChanges()
     {

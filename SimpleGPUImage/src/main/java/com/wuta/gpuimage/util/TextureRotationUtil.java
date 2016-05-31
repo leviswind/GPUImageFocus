@@ -47,7 +47,7 @@ public class TextureRotationUtil {
     };
     public static final float TEXTURE_SAVE[] = {
             0.0f, 0.0f,
-            1.0f, 1.0f,
+            1.0f, 0.0f,
             0.0f, 1.0f,
             1.0f, 1.0f,
     };

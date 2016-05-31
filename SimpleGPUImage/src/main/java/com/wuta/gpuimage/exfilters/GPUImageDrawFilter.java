@@ -59,12 +59,22 @@ public class GPUImageDrawFilter extends GPUImageFilter {
         if (mPicture == null) {
             return;
         }
-
-        if (picture == null || picture.isRecycled()) {
-            return;
+        if(mPictureTexture == OpenGlUtils.NO_TEXTURE) {
+            if (picture == null || picture.isRecycled()) {
+                return;
+            }
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
+            mPictureTexture = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE, false);
         }
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
-        mPictureTexture = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE, false);
+        else
+        {
+            if (picture == null || picture.isRecycled()) {
+                return;
+            }
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
+            mPictureTexture = OpenGlUtils.loadTexture(picture, mPictureTexture, false);
+        }
+
     }
 
     public int getPictureTexture() { return mPictureTexture; }
