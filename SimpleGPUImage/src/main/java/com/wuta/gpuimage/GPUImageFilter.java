@@ -102,7 +102,10 @@ public class GPUImageFilter {
         mOutputWidth = width;
         mOutputHeight = height;
     }
-
+    public int getFrameBufferId()
+    {
+        return mFrameBuffer.getFrameBufferId();
+    }
     public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
                        final FloatBuffer textureBuffer) {
         GLES20.glUseProgram(mGLProgId);
@@ -167,6 +170,10 @@ public class GPUImageFilter {
         GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
         mFrameBuffer.showFrameBuffer();
+        return mFrameBuffer.getFrameBufferTextureId();
+    }
+    public int getFrameBufferTexture()
+    {
         return mFrameBuffer.getFrameBufferTextureId();
     }
 

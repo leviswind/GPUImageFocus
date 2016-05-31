@@ -60,13 +60,11 @@ public class GPUImageDrawFilter extends GPUImageFilter {
             return;
         }
 
-        if (mPictureTexture == OpenGlUtils.NO_TEXTURE) {
-            if (picture == null || picture.isRecycled()) {
-                return;
-            }
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
-            mPictureTexture = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE, false);
+        if (picture == null || picture.isRecycled()) {
+            return;
         }
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE3);
+        mPictureTexture = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE, false);
     }
 
     public int getPictureTexture() { return mPictureTexture; }
@@ -100,8 +98,6 @@ public class GPUImageDrawFilter extends GPUImageFilter {
 
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
-
-
         onDrawArraysPre();
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 12);

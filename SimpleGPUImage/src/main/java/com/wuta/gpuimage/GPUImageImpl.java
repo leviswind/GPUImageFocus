@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -42,6 +43,10 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_NO_ROTATION;
+import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_90;
+import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_180;
+import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_270;
+import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_SAVE;
 
 /**
  * Created by kejin
@@ -94,6 +99,7 @@ public class GPUImageImpl implements IGPUImage
     private final FloatBuffer mGLCubeBuffer;
     private final FloatBuffer mGLTextureBuffer;
     private FloatBuffer mPictureBuffer;
+    private final FloatBuffer mSaveTextureBuffer;
     private Vector<GPUImageFilter> vec= new Vector<GPUImageFilter>();
     private GPUImageFrameBuffer mFrameBuffer;
     private boolean flag = true;
@@ -118,6 +124,8 @@ public class GPUImageImpl implements IGPUImage
     private static int MAX_FACES = 2;
     private int [] fpy = null;
     private Triangle mFaceTriangle;
+    private boolean save_flag = false;
+    private boolean draw_flag = true;
     private  float triangleCoords[] = {   // in counterclockwise order:
             0.0f,  0.0f,
             -0.5f, 0.0f,
@@ -126,7 +134,7 @@ public class GPUImageImpl implements IGPUImage
             -1.0f,-1.0f,
             0.0f,0.0f
     };
-
+    private ByteBuffer data;
     private GPUImageDrawFilter addPicture;
 
     // Set color with red, green, blue and alpha (opacity) values
@@ -155,6 +163,7 @@ public class GPUImageImpl implements IGPUImage
 };
     private int mCount;
     private Bitmap bitmap;
+    private Bitmap bitmapsave;
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
@@ -191,10 +200,14 @@ public class GPUImageImpl implements IGPUImage
         mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
+        mSaveTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        mSaveTextureBuffer.put(TextureRotationUtil.getRotation(Rotation.ROTATION_180,true,false)).position(0);
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
         mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES);
-
+        addPicture = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2);
         //FD = new FaceDetector(mOutputWidth,mOutputHeight,MAX_FACES);
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
     }
@@ -218,6 +231,7 @@ public class GPUImageImpl implements IGPUImage
             filter.init();
         }
         mDrawFilter.init();
+        addPicture.init();
         mImageConvertor.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
@@ -332,6 +346,8 @@ public class GPUImageImpl implements IGPUImage
         }
         GLES20.glUseProgram((mDrawFilter.getProgram()));
         mDrawFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
+        GLES20.glUseProgram((addPicture.getProgram()));
+        addPicture.onOutputSizeChanged(mOutputWidth, mOutputHeight);
 
         adjustImageScaling();
 
@@ -342,56 +358,137 @@ public class GPUImageImpl implements IGPUImage
 
     @Override
     public void onDrawFrame(GL10 gl) {
-
-        FPSMeter.meter("DrawFrame");
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        runAll(mRunOnDraw);
-        switch (mImageConvertor.getConvertType()) {
-            case SURFACE_TEXTURE:
-                if (mSurfaceTexture != null) {
-                    mSurfaceTexture.updateTexImage();
-                    mConvertedTextureId = mImageConvertor.convert(mSurfaceTextureId);
-                }
-                break;
-        }
-        int tempTextureId;
-        mCount += 1;
-
-        if (mCount == 200) {
-//            GLRecorder.startRecording();
-        } else if (mCount == 2000) {
-//            GLRecorder.stopRecording();
-        }
-        // Set color with red, green, blue and alpha (opacity) values
-        mTriangle = new Triangle(triangleCoords,color);
-
-        int size = vec.size();
-        int tempTexture;
-        vec.get(0).setTexture(mConvertedTextureId);
-
-        tempTextureId = vec.get(0).onDrawPicture();
-        for(int i=1;i<size;i++)
+        if(draw_flag)
         {
-            vec.get(i).setTexture(tempTextureId);
-            tempTextureId = vec.get(i).onDrawPicture();
-        }
-        center[0]+=0.01;
-        if(center[0]-temp+0.01>1)
-            center[0] = -1;
-        float TEXTURE_CUBE[] = {
+            FPSMeter.meter("DrawFrame");
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+            runAll(mRunOnDraw);
+            switch (mImageConvertor.getConvertType()) {
+                case SURFACE_TEXTURE:
+                    if (mSurfaceTexture != null) {
+                        mSurfaceTexture.updateTexImage();
+                        mConvertedTextureId = mImageConvertor.convert(mSurfaceTextureId);
+                    }
+                    break;
+            }
+            int tempTextureId;
+            mCount += 1;
+
+            if (mCount == 200) {
+//            GLRecorder.startRecording();
+            } else if (mCount == 2000) {
+//            GLRecorder.stopRecording();
+            }
+            // Set color with red, green, blue and alpha (opacity) values
+            mTriangle = new Triangle(triangleCoords,color);
+
+            int size = vec.size();
+            int tempTexture;
+            vec.get(0).setTexture(mConvertedTextureId);
+
+            tempTextureId = vec.get(0).onDrawPicture();
+            for(int i=1;i<size;i++)
+            {
+                vec.get(i).setTexture(tempTextureId);
+                tempTextureId = vec.get(i).onDrawPicture();
+            }
+            center[0]+=0.01;
+            if(center[0]-temp+0.01>1)
+                center[0] = -1;
+            float TEXTURE_CUBE[] = {
                     -temp+center[0], -temp+center[1],
                     temp+center[0], -temp+center[1],
                     -temp+center[0], temp+center[1],
                     temp+center[0], temp+center[1]
-        };
-        mPictureBuffer.rewind();
-        mPictureBuffer.put(TEXTURE_CUBE).position(0);
-        mDrawFilter.setTexture(tempTextureId);
-        mDrawFilter.onDrawPicture();
-       // mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
-        mDrawFilter.setPicture(bitmap);
-        mImageFilter.onDraw(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
-        runAll(mRunOnDrawEnd);
+            };
+            mPictureBuffer.rewind();
+            mPictureBuffer.put(TEXTURE_CUBE).position(0);
+            mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            mDrawFilter.setPicture(bitmap);
+            mImageFilter.onDraw(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
+            runAll(mRunOnDrawEnd);
+        }
+        else
+        {
+            FPSMeter.meter("DrawFrame");
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+            runAll(mRunOnDraw);
+            switch (mImageConvertor.getConvertType()) {
+                case SURFACE_TEXTURE:
+                    if (mSurfaceTexture != null) {
+                        mSurfaceTexture.updateTexImage();
+                        mConvertedTextureId = mImageConvertor.convert(mSurfaceTextureId);
+                    }
+                    break;
+            }
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer, mSaveTextureBuffer);
+            //int tempTextureId; 方法二
+            //tempTextureId = addPicture.onDrawPicture();
+            //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            runAll(mRunOnDrawEnd);
+        }
+
+        if(save_flag)
+        {
+            Log.e("save_flag:",""+save_flag);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter.getFrameBufferId());
+            bitmapsave = saveChanges();
+            //addPicture.setPicture(bitmapsave);
+            File file = new File("/storage/emulated/0/liwei");
+            File file2 = new File("/storage/emulated/0/liwei/1.jpg");
+            file.mkdirs();
+            try{
+                file2.createNewFile();
+            }catch(IOException e)
+            {
+                e.printStackTrace();
+            }
+            //YuvImage image = new YuvImage(data, ImageFormat.NV21,1920,1080,null);
+            try{
+                //image.compressToJpeg(new Rect(0,0,1920,1080),50,new FileOutputStream(file2));
+                bitmapsave.compress(Bitmap.CompressFormat.JPEG,100,new FileOutputStream(file2));
+            }catch(IOException e)
+            {
+
+            }
+
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            save_flag = false;
+        }
+
+
+    }
+    public Bitmap saveChanges()
+    {
+        int width = mOutputWidth;
+        int height = mOutputHeight;
+
+        int size = width * height;
+        ByteBuffer buf = ByteBuffer.allocateDirect(size * 4);
+        buf.order(ByteOrder.nativeOrder());
+        GLES20.glReadPixels(0, 0, width, height, GL10.GL_RGBA, GL10.GL_UNSIGNED_BYTE, buf);
+
+        int data[] = new int[size];
+        buf.asIntBuffer().get(data);
+        buf = null;
+        Bitmap createdBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+        createdBitmap.setPixels(data, size-width, -width, 0, 0, width, height);
+        data = null;
+
+        short sdata[] = new short[size];
+        ShortBuffer sbuf = ShortBuffer.wrap(sdata);
+        createdBitmap.copyPixelsToBuffer(sbuf);
+        for (int i = 0; i < size; ++i) {
+            //BGR-565 to RGB-565
+            short v = sdata[i];
+            sdata[i] = (short) (((v&0x1f) << 11) | (v&0x7e0) | ((v&0xf800) >> 11));
+        }
+
+        sbuf.rewind();
+        createdBitmap.copyPixelsFromBuffer(sbuf);
+        return createdBitmap;
     }
 
     @Override
@@ -421,7 +518,7 @@ public class GPUImageImpl implements IGPUImage
             });
         }
         else {
-            camera.addCallbackBuffer(data);
+            camera.addCallbackBuffer(data);;
         }
     }
 
@@ -600,7 +697,18 @@ public class GPUImageImpl implements IGPUImage
         mImageConvertor.destroy();
         mImageFilter.destroy();
     }
-
+    @Override
+    public void save()
+    {
+        save_flag = true;
+        draw_flag = false;
+    }
+    @Override
+    public void restart()
+    {
+        save_flag = false;
+        draw_flag = true;
+    }
     private void setupSurfaceTexture(final Camera camera) {
         if (mSurfaceTexture != null) {
             mSurfaceTexture.release();
@@ -726,4 +834,5 @@ public class GPUImageImpl implements IGPUImage
     }
 
     public enum ScaleType { CENTER_INSIDE, CENTER_CROP }
+
 }

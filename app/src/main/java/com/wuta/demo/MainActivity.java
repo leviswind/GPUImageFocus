@@ -73,6 +73,18 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
                 mCameraLoader.switchCamera(MainActivity.this, mIGPUImage);
             }
         });
+        findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mIGPUImage.save();
+            }
+        });
+        findViewById(R.id.restart).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mIGPUImage.restart();
+            }
+        });
 
     }
 

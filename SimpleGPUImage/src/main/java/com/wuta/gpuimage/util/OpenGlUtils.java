@@ -54,7 +54,7 @@ public class OpenGlUtils {
             0.0f, 0.0f
     };
     public static final float CENTER[] = {0.5f,0.5f};
-    public static final float CENTER2[] = {0.5f,0.8f};
+    public static final float CENTER2[] = {0.5f,0.5f};
     /*
     public static final float TEXTURE_TRIANGLES[] = {
             0.0f, 1.0f,
@@ -86,7 +86,7 @@ public class OpenGlUtils {
             CENTER2[0],CENTER2[1],
     };
     */
-    public static final float TEXTURE_TRIANGLES3[] = {
+    public static final float TEXTURE_TRIANGLES4[] = {
             1.0f, 0.0f,
             1.0f, 1.0f,
             CENTER[0],CENTER[1],
@@ -98,6 +98,20 @@ public class OpenGlUtils {
             CENTER[0],CENTER[1],
             0.0f, 0.0f,
             1.0f, 0.0f,
+            CENTER[0],CENTER[1],
+    };
+    public static final float TEXTURE_TRIANGLES2[] = {
+            1.0f, 1.0f,
+            1.0f, 0.0f,
+            CENTER[0],CENTER[1],
+            1.0f, 0.0f,
+            0.0f, 0.0f,
+            CENTER[0],CENTER[1],
+            0.0f, 0.0f,
+            0.0f, 1.0f,
+            CENTER[0],CENTER[1],
+            0.0f, 1.0f,
+            1.0f, 1.0f,
             CENTER[0],CENTER[1],
     };
     public static final float TEXTURE_TRIANGLES[] = {
@@ -114,7 +128,7 @@ public class OpenGlUtils {
             0.0f, 0.0f,
             CENTER[0],CENTER[1],
     };
-    public static final float TEXTURE_TRIANGLES2[] = {
+    public static final float TEXTURE_TRIANGLES3[] = {
             0.0f, 1.0f,
             1.0f, 1.0f,
             CENTER2[0],CENTER2[1],
