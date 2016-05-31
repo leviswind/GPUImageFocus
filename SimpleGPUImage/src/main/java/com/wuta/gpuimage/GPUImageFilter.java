@@ -321,5 +321,7 @@ public class GPUImageFilter {
         return s.hasNext() ? s.next() : "";
     }
     public void setTexture(final int Texture){}
+    public void setPicture(final Bitmap picture) {}
     public int onDrawPicture(){return -1;}
+    public int getPictureTexture(){return -1;}
 }

@@ -42,7 +42,7 @@ public class GPUImageDrawFilter2 extends GPUImageFilter {
         }
     }
 
-    private int getPictureTexture() { return mPictureTexture; }
+    public int getPictureTexture() { return mPictureTexture; }
 
     public int onDrawPicture(final FloatBuffer triangleBuffer, final FloatBuffer textureBuffer,
                               int shapes) {

@@ -34,7 +34,8 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
 //    private GPUImage mGPUImage;
     private ICameraLoader mCameraLoader;
     private GPUImageFilter mFilter;
-    //private GPUImageDrawFilter mDrawFilter;
+    private GPUImageDrawFilter mDrawFilter;
+
    // private GPUImageDrawFilter2 mDrawFilter2;
 
     private IGPUImage mIGPUImage;
@@ -53,14 +54,17 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
         view.setOnTouchListener(this);
         mFilter = new GPUImageSwirlFilter();
 
-        //mDrawFilter = new GPUImageDrawFilter();
+        mDrawFilter = new GPUImageDrawFilter();
        // mDrawFilter2 = new GPUImageDrawFilter2();
 //        mIGPUImage.setFilter(mFilter);
        // mIGPUImage.setDrawFilter(mDrawFilter);
        // mIGPUImage.setDrawFilter2(mDrawFilter2);
 
-        //Bitmap picture = BitmapFactory.decodeResource(getResources(), R.mipmap.lena512);
+       Bitmap picture = BitmapFactory.decodeResource(getResources(), R.mipmap.testpic);
+        Log.e("setPicture","in MainActivity1");
         //mIGPUImage.setDrawPicture(picture);
+        mIGPUImage.setBitmap(picture);
+        Log.e("setPicture","in MainActivity2");
 
         mCameraLoader = CameraLoaderImpl.getInstance();
         findViewById(R.id.switcher).setOnClickListener(new View.OnClickListener() {

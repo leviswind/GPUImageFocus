@@ -3,6 +3,7 @@ package com.wuta.gpuimage.exfilters;
 import android.graphics.Bitmap;
 import android.graphics.Paint;
 import android.opengl.GLES20;
+import android.util.Log;
 
 import com.wuta.gpuimage.GPUImageFilter;
 import com.wuta.gpuimage.GPUImageFrameBuffer;
@@ -32,7 +33,20 @@ public class GPUImageDrawFilter extends GPUImageFilter {
                 .asFloatBuffer();
         mGLTextureTrianglesBuffer.put(TEXTURE_TRIANGLES).position(0);
     }
-
+    public GPUImageDrawFilter(){
+        super();
+    }
+    public void setCoordinate(float [] VERTEX_TRIANGLES,float []TEXTURE_TRIANGLES)
+    {
+        mGLVertexTrianglesBuffer = ByteBuffer.allocateDirect(VERTEX_TRIANGLES.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        mGLVertexTrianglesBuffer.put(VERTEX_TRIANGLES).position(0);
+        mGLTextureTrianglesBuffer = ByteBuffer.allocateDirect(TEXTURE_TRIANGLES.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        mGLTextureTrianglesBuffer.put(TEXTURE_TRIANGLES).position(0);
+    }
     public void setTexture(final int Texture)
     {
         mPictureTexture = Texture;
@@ -55,7 +69,7 @@ public class GPUImageDrawFilter extends GPUImageFilter {
         }
     }
 
-    private int getPictureTexture() { return mPictureTexture; }
+    public int getPictureTexture() { return mPictureTexture; }
 
     public int onDrawPicture() {
         if(mFrameBuffer==null)

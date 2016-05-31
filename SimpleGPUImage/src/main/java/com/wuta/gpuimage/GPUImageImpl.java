@@ -2,6 +2,7 @@ package com.wuta.gpuimage;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -13,6 +14,7 @@ import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ContextThemeWrapper;
 
 
 import com.wuta.gpuimage.convert.GPUImageConvertor;
@@ -91,6 +93,7 @@ public class GPUImageImpl implements IGPUImage
 
     private final FloatBuffer mGLCubeBuffer;
     private final FloatBuffer mGLTextureBuffer;
+    private FloatBuffer mPictureBuffer;
     private Vector<GPUImageFilter> vec= new Vector<GPUImageFilter>();
     private GPUImageFrameBuffer mFrameBuffer;
     private boolean flag = true;
@@ -108,7 +111,6 @@ public class GPUImageImpl implements IGPUImage
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
     private Triangle mTriangle;
-    private Bitmap bitmap;
     private FaceDetector FD;
     private FaceDetector.Face[] faces;
     private PointF midpoint = new PointF();
@@ -121,13 +123,38 @@ public class GPUImageImpl implements IGPUImage
             -0.5f, 0.0f,
             -0.5f, -0.5f,
             0.0f,-0.5f,
+            -1.0f,-1.0f,
             0.0f,0.0f
     };
+
+    private GPUImageDrawFilter addPicture;
 
     // Set color with red, green, blue and alpha (opacity) values
     private float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
 
+    private float TEXTURE_PICTURE[] = {0.4f, 0.4f,
+                                        0.4f, 0.6f,
+                                        0.5f, 0.5f,
+                                        0.4f,0.6f,
+                                        0.6f, 0.6f,
+                                        0.5f, 0.5f,
+                                        0.6f, 0.6f,
+                                        0.6f,0.4f,
+                                        0.5f, 0.5f,
+                                        0.6f, 0.4f,
+                                        0.4f, 0.4f,
+                                        0.5f, 0.5f
+};
+    private static float temp = 0.3f;
+    private static float center[] = {0.0f, 0.0f};
+    private float TEXTURE_CUBE[]={
+                                    -temp+center[0], -temp+center[1],
+                                    temp+center[0], -temp+center[1],
+                                    -temp+center[0], temp+center[1],
+                                    temp+center[0], temp+center[1]
+};
     private int mCount;
+    private Bitmap bitmap;
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
@@ -157,17 +184,26 @@ public class GPUImageImpl implements IGPUImage
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         mGLCubeBuffer.put(CUBE).position(0);
-
+        mPictureBuffer =ByteBuffer.allocateDirect(TEXTURE_CUBE.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        mPictureBuffer.put(TEXTURE_CUBE).position(0);
         mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         setRotation(Rotation.NORMAL, false, false);
         vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
+        mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES);
 
         //FD = new FaceDetector(mOutputWidth,mOutputHeight,MAX_FACES);
        // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
     }
 
+    @Override
+    public void setBitmap(Bitmap bitmap1)
+    {
+        bitmap = bitmap1;
+    }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
@@ -181,6 +217,7 @@ public class GPUImageImpl implements IGPUImage
         {
             filter.init();
         }
+        mDrawFilter.init();
         mImageConvertor.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
@@ -203,6 +240,10 @@ public class GPUImageImpl implements IGPUImage
                             Log.e("triagleCoord","("+s+")");
                         }
                     });
+                }
+                else
+                {
+                    Log.e("no detected face","result--------------------");
                 }
             }
         });
@@ -289,6 +330,8 @@ public class GPUImageImpl implements IGPUImage
             GLES20.glUseProgram((filter.getProgram()));
             filter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
         }
+        GLES20.glUseProgram((mDrawFilter.getProgram()));
+        mDrawFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
 
         adjustImageScaling();
 
@@ -325,18 +368,29 @@ public class GPUImageImpl implements IGPUImage
         int size = vec.size();
         int tempTexture;
         vec.get(0).setTexture(mConvertedTextureId);
+
         tempTextureId = vec.get(0).onDrawPicture();
         for(int i=1;i<size;i++)
         {
             vec.get(i).setTexture(tempTextureId);
             tempTextureId = vec.get(i).onDrawPicture();
         }
-        mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
-
-        mTriangle.draw();
-
-
-
+        center[0]+=0.01;
+        if(center[0]-temp+0.01>1)
+            center[0] = -1;
+        float TEXTURE_CUBE[] = {
+                    -temp+center[0], -temp+center[1],
+                    temp+center[0], -temp+center[1],
+                    -temp+center[0], temp+center[1],
+                    temp+center[0], temp+center[1]
+        };
+        mPictureBuffer.rewind();
+        mPictureBuffer.put(TEXTURE_CUBE).position(0);
+        mDrawFilter.setTexture(tempTextureId);
+        mDrawFilter.onDrawPicture();
+       // mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+        mDrawFilter.setPicture(bitmap);
+        mImageFilter.onDraw(mDrawFilter.getPictureTexture(), mPictureBuffer, mGLTextureBuffer);
         runAll(mRunOnDrawEnd);
     }
 
@@ -478,6 +532,7 @@ public class GPUImageImpl implements IGPUImage
                     oldFilter.destroy();
                 }
                 mDrawFilter.init();
+                mDrawFilter.setCoordinate(VERTEX_TRIANGLES,TEXTURE_PICTURE);
                 GLES20.glUseProgram((mDrawFilter.getProgram()));
                 mDrawFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
             }

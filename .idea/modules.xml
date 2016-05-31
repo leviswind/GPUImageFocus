@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/GPUImageFocus1.iml" filepath="$PROJECT_DIR$/GPUImageFocus1.iml" />
       <module fileurl="file://$PROJECT_DIR$/SimpleGPUImage/SimpleGPUImage.iml" filepath="$PROJECT_DIR$/SimpleGPUImage/SimpleGPUImage.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/wutaGpuimage-vector.iml" filepath="$PROJECT_DIR$/wutaGpuimage-vector.iml" />
     </modules>
   </component>
 </project>

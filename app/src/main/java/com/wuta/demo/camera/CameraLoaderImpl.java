@@ -70,8 +70,8 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.set("fast-fps-mode", 1);
         List<Camera.Size> supportedSize = parameters.getSupportedPreviewSizes();
 //        parameters.setRecordingHint(true);
-        Camera.Size size = supportedSize.get(supportedSize.size()-1);
-        parameters.setPreviewSize(1920,1080);
+        Camera.Size size = supportedSize.get(0);
+        parameters.setPreviewSize(size.width,size.height);
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);

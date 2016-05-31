@@ -43,6 +43,6 @@ public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallbac
 
     void setFocus(MotionEvent event, Camera camera);
     void setFocus(MotionEvent event);
-
+    void setBitmap(Bitmap bitmap);
     void destroy();
 }
