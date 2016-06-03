@@ -85,6 +85,12 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
                 mIGPUImage.restart();
             }
         });
+        findViewById(R.id.crop).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mIGPUImage.crop();
+            }
+        });
 
     }
 

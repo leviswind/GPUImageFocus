@@ -16,6 +16,8 @@
 
 package com.wuta.gpuimage.util;
 
+import android.os.Build;
+
 import com.wuta.gpuimage.Rotation;
 
 public class TextureRotationUtil {
@@ -50,6 +52,12 @@ public class TextureRotationUtil {
             1.0f, 0.0f,
             0.0f, 1.0f,
             1.0f, 1.0f,
+    };
+    public static final float TEXTURE_SAVE_CROP[] ={
+            0.0f, 0.25f,
+            1.0f,0.25f,
+            0.0f,1.0f,
+            1.0f,1.0f
     };
 
     private TextureRotationUtil() {

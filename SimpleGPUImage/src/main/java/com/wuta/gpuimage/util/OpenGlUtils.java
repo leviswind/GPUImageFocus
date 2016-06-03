@@ -38,6 +38,12 @@ public class OpenGlUtils {
             -1.0f, 1.0f,
             1.0f, 1.0f,
     };
+    public static final float VERTEX_CUBE_CROP[]={
+            -1.0f,-0.5f,
+            1.0f,-0.5f,
+            -1.0f,1.0f,
+            1.0f,1.0f
+    };
 
     public static final float VERTEX_TRIANGLES[] = {
             -1.0f, -1.0f,

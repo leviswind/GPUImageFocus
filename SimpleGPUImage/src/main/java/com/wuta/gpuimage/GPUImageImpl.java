@@ -47,6 +47,8 @@ import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_90;
 import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_180;
 import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_ROTATED_270;
 import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_SAVE;
+import static com.wuta.gpuimage.util.TextureRotationUtil.TEXTURE_SAVE_CROP;
+
 
 /**
  * Created by kejin
@@ -59,6 +61,7 @@ public class GPUImageImpl implements IGPUImage
     public final Object mSurfaceChangedWaiter = new Object();
 
     public final static float [] CUBE = OpenGlUtils.VERTEX_CUBE;
+    public final static float [] CUBE_CROP = OpenGlUtils.VERTEX_CUBE_CROP;
 
 
     public final static float [] VERTEX_TRIANGLES = OpenGlUtils.VERTEX_TRIANGLES;
@@ -99,12 +102,16 @@ public class GPUImageImpl implements IGPUImage
     private final Queue<Runnable> mRunOnDrawEnd;
 
     private final FloatBuffer mGLCubeBuffer;
+    private final FloatBuffer mGLCubeBuffer2;
+
     private final FloatBuffer mGLTextureBuffer;
     private FloatBuffer mPictureBuffer;
     private final FloatBuffer mSaveTextureBuffer;
+    private final FloatBuffer mSaveTextureBuffer2;
     private Vector<GPUImageFilter> vec= new Vector<GPUImageFilter>();
     private GPUImageFrameBuffer mFrameBuffer;
     private boolean flag = true;
+    private boolean textureCropFlag = false;
 
     private int mOutputWidth;
     private int mOutputHeight;
@@ -142,19 +149,6 @@ public class GPUImageImpl implements IGPUImage
     // Set color with red, green, blue and alpha (opacity) values
     private float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
 
-    private float TEXTURE_PICTURE[] = {0.4f, 0.4f,
-                                        0.4f, 0.6f,
-                                        0.5f, 0.5f,
-                                        0.4f,0.6f,
-                                        0.6f, 0.6f,
-                                        0.5f, 0.5f,
-                                        0.6f, 0.6f,
-                                        0.6f,0.4f,
-                                        0.5f, 0.5f,
-                                        0.6f, 0.4f,
-                                        0.4f, 0.4f,
-                                        0.5f, 0.5f
-};
     private static float temp = 0.3f;
     private static float center[] = {0.0f, 0.0f};
     private float TEXTURE_CUBE[]={
@@ -162,7 +156,7 @@ public class GPUImageImpl implements IGPUImage
                                     temp+center[0], -temp+center[1],
                                     -temp+center[0], temp+center[1],
                                     temp+center[0], temp+center[1]
-};
+    };
     private int mCount;
     private Bitmap bitmap;
     private Bitmap bitmapsave;
@@ -194,6 +188,9 @@ public class GPUImageImpl implements IGPUImage
         mGLCubeBuffer = ByteBuffer.allocateDirect(CUBE.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
+        mGLCubeBuffer2 = ByteBuffer.allocateDirect(CUBE.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
         mGLCubeBuffer.put(CUBE).position(0);
         mPictureBuffer =ByteBuffer.allocateDirect(TEXTURE_CUBE.length * 4)
                 .order(ByteOrder.nativeOrder())
@@ -203,6 +200,9 @@ public class GPUImageImpl implements IGPUImage
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         mSaveTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer();
+        mSaveTextureBuffer2 = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         mSaveTextureBuffer.put(TEXTURE_SAVE).position(0);
@@ -363,6 +363,7 @@ public class GPUImageImpl implements IGPUImage
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        set_Crop();
         if(draw_flag)
         {
             FPSMeter.meter("DrawFrame");
@@ -409,11 +410,12 @@ public class GPUImageImpl implements IGPUImage
             };
             mPictureBuffer.rewind();
             mPictureBuffer.put(TEXTURE_CUBE).position(0);
-            mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+           // mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
             int tempTexture2 = mDrawFilter.onDrawPicture();
-            mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            mImageFilter.onDrawFrameBuffer(mDrawFilter.getPictureTexture(), mPictureBuffer, mSaveTextureBuffer);
+           // mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
         else
@@ -429,7 +431,7 @@ public class GPUImageImpl implements IGPUImage
                     }
                     break;
             }
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer, mSaveTextureBuffer);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             //int tempTextureId; //方法二,有闪烁错误
             //tempTextureId = addPicture.onDrawPicture();
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
@@ -462,6 +464,19 @@ public class GPUImageImpl implements IGPUImage
 
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             save_flag = false;
+        }
+    }
+    public void set_Crop()
+    {
+        if(textureCropFlag)
+        {
+            mGLCubeBuffer2.put(CUBE_CROP).position(0);
+            mSaveTextureBuffer2.put(TEXTURE_SAVE_CROP);
+        }
+        else
+        {
+            mGLCubeBuffer2.put(CUBE).position(0);
+            mSaveTextureBuffer2.put(TEXTURE_SAVE);
         }
     }
     public Bitmap saveChanges()
@@ -551,7 +566,6 @@ public class GPUImageImpl implements IGPUImage
         final Camera.Size size = camera.getParameters().getPreviewSize();
         mImageWidth = size.width;
         mImageHeight = size.height;
-
 //        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
         /**
@@ -633,7 +647,6 @@ public class GPUImageImpl implements IGPUImage
                     oldFilter.destroy();
                 }
                 mDrawFilter.init();
-                mDrawFilter.setCoordinate(VERTEX_TRIANGLES,TEXTURE_PICTURE);
                 GLES20.glUseProgram((mDrawFilter.getProgram()));
                 mDrawFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
             }
@@ -712,6 +725,11 @@ public class GPUImageImpl implements IGPUImage
     {
         save_flag = false;
         draw_flag = true;
+    }
+    @Override
+    public void crop()
+    {
+        textureCropFlag = !textureCropFlag;
     }
     private void setupSurfaceTexture(final Camera camera) {
         if (mSurfaceTexture != null) {
