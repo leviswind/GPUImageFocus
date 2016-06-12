@@ -1,5 +1,6 @@
 package com.wuta.demo;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
@@ -89,6 +90,13 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
             @Override
             public void onClick(View v) {
                 mIGPUImage.crop();
+            }
+        });
+        findViewById(R.id.Resolution).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mCameraLoader.change_Resolution(MainActivity.this,mIGPUImage);
+                mIGPUImage.change_Resoluton();
             }
         });
 

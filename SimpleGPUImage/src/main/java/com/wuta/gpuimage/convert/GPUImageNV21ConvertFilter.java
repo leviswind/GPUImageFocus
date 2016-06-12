@@ -70,7 +70,7 @@ public class GPUImageNV21ConvertFilter extends GPUImageConvertFilter
 
     @Override
     protected void onConvert(byte[] data, int width, int height) {
-        if (mUVData == null) {
+        if (mUVData ==null || mUVData.length != width*height/2) {
             mUVData = new byte[width*height/2];
         }
         System.arraycopy(data, width*height, mUVData, 0, width*height/2);

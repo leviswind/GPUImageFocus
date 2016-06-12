@@ -33,4 +33,10 @@
         android:text="crop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+    <Button
+        android:id="@+id/Resolution"
+        android:layout_gravity="top|right"
+        android:text="Resolution"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </FrameLayout>

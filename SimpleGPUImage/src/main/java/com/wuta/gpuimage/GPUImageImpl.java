@@ -163,7 +163,7 @@ public class GPUImageImpl implements IGPUImage
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
-        this(context, view, GPUImageConvertor.ConvertType.RAW_NV21_TO_RGBA);
+        this(context, view, GPUImageConvertor.ConvertType.SURFACE_TEXTURE);
     }
 
     public GPUImageImpl(Context context, GLSurfaceView view, GPUImageConvertor.ConvertType convertType)
@@ -360,7 +360,7 @@ public class GPUImageImpl implements IGPUImage
             mSurfaceChangedWaiter.notifyAll();
         }
     }
-
+    private boolean textureFlag = true;
     @Override
     public void onDrawFrame(GL10 gl) {
         set_Crop();
@@ -410,11 +410,14 @@ public class GPUImageImpl implements IGPUImage
             };
             mPictureBuffer.rewind();
             mPictureBuffer.put(TEXTURE_CUBE).position(0);
-           // mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
-            mImageFilter.onDrawFrameBuffer(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
+
+            mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
+
+
             int tempTexture2 = mDrawFilter.onDrawPicture();
-           // mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+           // mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
@@ -470,13 +473,14 @@ public class GPUImageImpl implements IGPUImage
     {
         if(textureCropFlag)
         {
+            //mGLCubeBuffer2.rewind();
             mGLCubeBuffer2.put(CUBE_CROP).position(0);
-            mSaveTextureBuffer2.put(TEXTURE_SAVE_CROP);
+            mSaveTextureBuffer2.put(TEXTURE_SAVE_CROP).position(0);
         }
         else
         {
             mGLCubeBuffer2.put(CUBE).position(0);
-            mSaveTextureBuffer2.put(TEXTURE_SAVE);
+            mSaveTextureBuffer2.put(TEXTURE_SAVE).position(0);
         }
     }
     public Bitmap saveChanges()
@@ -512,13 +516,14 @@ public class GPUImageImpl implements IGPUImage
 
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
-
+       // Log.e("data.length",""+data.length);
         FPSMeter.meter("PreviewFrame");
         if (data.length != mImageHeight*mImageWidth*3/2) {
             Camera.Parameters parameters = camera.getParameters();
             Camera.Size previewSize = parameters.getPreviewSize();
             mImageWidth = previewSize.width;
             mImageHeight = previewSize.height;
+
             runOnDraw(new Runnable() {
                 @Override
                 public void run() {
@@ -526,12 +531,14 @@ public class GPUImageImpl implements IGPUImage
                 }
             });
         }
-
+        final int tempWidth = mImageWidth;
+        final int tempHeight = mImageHeight;
         if (mRunOnDraw.isEmpty()) {
             runOnDraw(new Runnable() {
                 @Override
                 public void run() {
-                    mConvertedTextureId = mImageConvertor.convert(data, mImageWidth, mImageHeight);
+                    //Log.e("In onpreviewframe"," "+mImageWidth+mImageHeight);
+                    mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
                     camera.addCallbackBuffer(data);
                 }
             });
@@ -586,9 +593,11 @@ public class GPUImageImpl implements IGPUImage
                 camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
                 camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
                 camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
+
+
                 camera.setPreviewCallbackWithBuffer(GPUImageImpl.this);
                 camera.startPreview();
-            }
+                }
         });
 
         Rotation rotation = Rotation.NORMAL;
@@ -730,6 +739,7 @@ public class GPUImageImpl implements IGPUImage
     public void crop()
     {
         textureCropFlag = !textureCropFlag;
+        Log.e("In crop","true------------");
     }
     private void setupSurfaceTexture(final Camera camera) {
         if (mSurfaceTexture != null) {
@@ -751,6 +761,16 @@ public class GPUImageImpl implements IGPUImage
             e.printStackTrace();
         }
     }
+    @Override
+    public void change_Resoluton()
+    {
+        Camera.Parameters parameters = mCamera.getParameters();
+        Camera.Size previewSize = parameters.getPreviewSize();
+        mImageWidth = previewSize.width;
+        mImageHeight = previewSize.height;
+        textureFlag = !textureFlag;
+        adjustImageScaling();
+    }
 
     private void adjustImageScaling() {
         float outputWidth = mOutputWidth;
@@ -759,6 +779,7 @@ public class GPUImageImpl implements IGPUImage
             outputWidth = mOutputHeight;
             outputHeight = mOutputWidth;
         }
+
 
         float ratio1 = outputWidth / mImageWidth;
         float ratio2 = outputHeight / mImageHeight;
@@ -787,7 +808,16 @@ public class GPUImageImpl implements IGPUImage
                     CUBE[4] / ratioHeight, CUBE[5] / ratioWidth,
                     CUBE[6] / ratioHeight, CUBE[7] / ratioWidth,
             };
+
         }
+        String s=" ";
+        for(int i=0;i<8;i++)
+            s+=textureCords[i]+" ";
+        Log.e("textureCord",s);
+        String s1=" ";
+        for(int i=0;i<8;i++)
+            s1+=cube[i]+" ";
+        Log.e("cube",s1);
 
         mGLCubeBuffer.clear();
         mGLCubeBuffer.put(cube).position(0);

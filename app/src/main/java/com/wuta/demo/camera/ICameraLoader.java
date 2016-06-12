@@ -16,4 +16,6 @@ public interface ICameraLoader
     void onPause();
 
     void switchCamera(Activity activity, IGPUImage image);
+
+    void change_Resolution(Activity activity, IGPUImage mIgpuImage);
 }
