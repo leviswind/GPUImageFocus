@@ -615,15 +615,18 @@ public class GPUImageImpl implements IGPUImage
         runOnDraw(new Runnable() {
             @Override
             public void run() {
-                setupSurfaceTexture(camera);
+                if(!releaseFlag)
+                {
+                    setupSurfaceTexture(camera);
 
-                camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
-                camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
-                camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
+                    camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
+                    camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
+                    camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
 
 
-                camera.setPreviewCallbackWithBuffer(GPUImageImpl.this);
-                camera.startPreview();
+                    camera.setPreviewCallbackWithBuffer(GPUImageImpl.this);
+                    camera.startPreview();
+                }
                 }
         });
 
@@ -863,7 +866,6 @@ public class GPUImageImpl implements IGPUImage
             releaseFlag = true;
             mCamera = null;
         }
-
     }
     private float addDistance(float coordinate, float distance) {
         return coordinate == 0.0f ? distance : 1 - distance;

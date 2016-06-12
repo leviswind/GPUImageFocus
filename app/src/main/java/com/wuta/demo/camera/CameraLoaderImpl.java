@@ -36,7 +36,7 @@ public class CameraLoaderImpl implements ICameraLoader
 
     @Override
     public void onResume(Activity activity, IGPUImage image) {
-        switchCamera(activity, image);
+        restartCamera(activity, image);
 //        setUpCamera(mCurrentCameraId, activity, image);
     }
 
