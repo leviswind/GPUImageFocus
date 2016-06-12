@@ -167,7 +167,7 @@ public class GPUImageImpl implements IGPUImage
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
-        this(context, view, GPUImageConvertor.ConvertType.RAW_NV21_TO_RGBA);
+        this(context, view, GPUImageConvertor.ConvertType.SURFACE_TEXTURE);
     }
 
     public GPUImageImpl(Context context, GLSurfaceView view, GPUImageConvertor.ConvertType convertType)
@@ -535,7 +535,7 @@ public class GPUImageImpl implements IGPUImage
        // Log.e("data.length",""+data.length);
         if(save_tempflag )
         {
-            if(tempnum<100)
+            if(tempnum<10)
             {
                 tempnum++;
             }else{

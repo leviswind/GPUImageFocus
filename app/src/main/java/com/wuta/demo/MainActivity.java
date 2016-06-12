@@ -27,6 +27,10 @@ import com.wuta.gpuimage.exfilters.GPUImageDrawFilter2;
 import com.wuta.gpuimage.exfilters.GPUImageSampleFilter;
 import com.wuta.gpuimage.exfilters.GPUImageSwirlFilter;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnTouchListener
@@ -101,7 +105,44 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
                 mIGPUImage.change_Resoluton();
             }
         });
+        findViewById(R.id.takephoto).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Camera camera = mCameraLoader.getCamera();
+                camera.takePicture(new Camera.ShutterCallback() {
+                    @Override
+                    public void onShutter() {
 
+                    }
+                }, new Camera.PictureCallback() {
+                    @Override
+                    public void onPictureTaken(byte[] data, Camera camera) {
+
+                    }
+                }, new Camera.PictureCallback() {
+                    @Override
+                    public void onPictureTaken(byte[] data, Camera camera) {
+                        File file = new File("/storage/emulated/0/liwei");
+                        File file2 = new File("/storage/emulated/0/liwei/1.jpg");
+                        file.mkdirs();
+                        try{
+                            file2.createNewFile();
+                        }catch(IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            FileOutputStream fos = new FileOutputStream(file2);
+                            fos.write(data);
+                            fos.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
     }
 
 

@@ -32,6 +32,11 @@ public class CameraLoaderImpl implements ICameraLoader
         return mInstance;
     }
 
+    @Override
+    public Camera getCamera() {
+        return mCameraInstance;
+    }
+
     private CameraLoaderImpl() {}
 
     @Override
@@ -72,10 +77,11 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.setRecordingHint(true);
         Camera.Size size = parameters.getPreviewSize();
         Log.e("in setUpCamera: size is"," "+size.width+" "+size.height);
-        parameters.setPreviewSize(1920, 1080);
+        parameters.setPreviewSize(176, 144);
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);
+        parameters.setPictureSize(1920,1080);
         mCameraInstance.setParameters(parameters);
 
         debug(mCameraInstance);

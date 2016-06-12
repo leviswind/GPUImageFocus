@@ -1,6 +1,7 @@
 package com.wuta.demo.camera;
 
 import android.app.Activity;
+import android.hardware.Camera;
 
 import com.wuta.gpuimage.GPUImage;
 import com.wuta.gpuimage.IGPUImage;
@@ -26,4 +27,6 @@ public interface ICameraLoader
     void save(Activity activity, IGPUImage mIgpuImage);
 
     void restart(Activity activity, IGPUImage mIgpuImage);
+
+    Camera getCamera();
 }
