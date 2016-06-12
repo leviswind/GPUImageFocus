@@ -74,6 +74,7 @@ public class GPUImageImpl implements IGPUImage
     protected Context mContext;
     protected GLSurfaceView mGLSurfaceView;
     protected GPUImageFilter mImageFilter;
+    protected GPUImageFilter mImageFilter2;
     protected GPUImageDrawFilter mDrawFilter;
     protected GPUImageDrawFilter2 mDrawFilter2;
     protected ScaleType mScaleType = ScaleType.CENTER_CROP;
@@ -134,6 +135,7 @@ public class GPUImageImpl implements IGPUImage
     private int [] fpy = null;
     private Triangle mFaceTriangle;
     private boolean save_flag = false;
+    private boolean save_tempflag = false;
     private boolean draw_flag = true;
     private  float triangleCoords[] = {   // in counterclockwise order:
             0.0f,  0.0f,
@@ -157,9 +159,11 @@ public class GPUImageImpl implements IGPUImage
                                     -temp+center[0], temp+center[1],
                                     temp+center[0], temp+center[1]
     };
+    public static boolean releaseFlag = false;
     private int mCount;
     private Bitmap bitmap;
     private Bitmap bitmapsave;
+    private boolean imagefilterFlag = true;
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
@@ -180,6 +184,7 @@ public class GPUImageImpl implements IGPUImage
 
         mContext = context;
         mImageFilter = new GPUImageFilter();
+        mImageFilter2 = new GPUImageFilter();
         mImageConvertor = new GPUImageConvertor(convertType);
 
         mRunOnDraw = new LinkedList<Runnable>();
@@ -228,6 +233,7 @@ public class GPUImageImpl implements IGPUImage
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 
         mImageFilter.init();
+        mImageFilter2.init();
         for(GPUImageFilter filter:vec)
         {
             filter.init();
@@ -343,6 +349,8 @@ public class GPUImageImpl implements IGPUImage
 
         GLES20.glUseProgram(mImageFilter.getProgram());
         mImageFilter.onOutputSizeChanged(width, height);
+        GLES20.glUseProgram(mImageFilter2.getProgram());
+        mImageFilter2.onOutputSizeChanged(width, height);
 
         for(GPUImageFilter filter:vec)
         {
@@ -371,7 +379,7 @@ public class GPUImageImpl implements IGPUImage
             runAll(mRunOnDraw);
             switch (mImageConvertor.getConvertType()) {
                 case SURFACE_TEXTURE:
-                    if (mSurfaceTexture != null) {
+                    if (mSurfaceTexture != null || !releaseFlag ) {
                         mSurfaceTexture.updateTexImage();
                         mConvertedTextureId = mImageConvertor.convert(mSurfaceTextureId);
                     }
@@ -412,13 +420,20 @@ public class GPUImageImpl implements IGPUImage
             mPictureBuffer.put(TEXTURE_CUBE).position(0);
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
-            mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
-
-
             int tempTexture2 = mDrawFilter.onDrawPicture();
             //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-           // mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+
+            if(imagefilterFlag)
+            {
+                mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
+                mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+                mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+            }
+            {
+                mImageFilter2.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
+                mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+                mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+            }
             runAll(mRunOnDrawEnd);
         }
         else
@@ -444,7 +459,7 @@ public class GPUImageImpl implements IGPUImage
         if(save_flag)
         {
             Log.e("save_flag:",""+save_flag);
-            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter.getFrameBufferId());
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
            // addPicture.setPicture(bitmapsave);
             File file = new File("/storage/emulated/0/liwei");
@@ -464,9 +479,10 @@ public class GPUImageImpl implements IGPUImage
             {
 
             }
-
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+            draw_flag = false;
             save_flag = false;
+            releaseCamera();
         }
     }
     public void set_Crop()
@@ -513,10 +529,21 @@ public class GPUImageImpl implements IGPUImage
         createdBitmap.copyPixelsFromBuffer(sbuf);
         return createdBitmap;
     }
-
+    private int tempnum = 0;
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
        // Log.e("data.length",""+data.length);
+        if(save_tempflag )
+        {
+            if(tempnum<10)
+            {
+                tempnum++;
+            }else{
+                save_flag = true;
+                tempnum =0;
+                save_tempflag = false;
+            }
+        }
         FPSMeter.meter("PreviewFrame");
         if (data.length != mImageHeight*mImageWidth*3/2) {
             Camera.Parameters parameters = camera.getParameters();
@@ -538,7 +565,7 @@ public class GPUImageImpl implements IGPUImage
                 @Override
                 public void run() {
                     //Log.e("In onpreviewframe"," "+mImageWidth+mImageHeight);
-                    mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
+                    //mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
                     camera.addCallbackBuffer(data);
                 }
             });
@@ -613,6 +640,7 @@ public class GPUImageImpl implements IGPUImage
                 break;
         }
         setRotation(rotation, flipHor, flipVer);
+        releaseFlag = false;
     }
 
     @Override
@@ -726,14 +754,16 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void save()
     {
-        save_flag = true;
-        draw_flag = false;
+        save_tempflag = true;
+        draw_flag = true;
+        imagefilterFlag = false;
     }
     @Override
     public void restart()
     {
         save_flag = false;
         draw_flag = true;
+        imagefilterFlag = true;
     }
     @Override
     public void crop()
@@ -824,7 +854,17 @@ public class GPUImageImpl implements IGPUImage
         mGLTextureBuffer.clear();
         mGLTextureBuffer.put(textureCords).position(0);
     }
+    public void releaseCamera()
+    {
+        if(!releaseFlag)
+        {
+            mCamera.setPreviewCallback(null);
+            mCamera.release();
+            releaseFlag = true;
+            mCamera = null;
+        }
 
+    }
     private float addDistance(float coordinate, float distance) {
         return coordinate == 0.0f ? distance : 1 - distance;
     }

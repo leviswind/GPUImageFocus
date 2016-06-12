@@ -18,7 +18,6 @@ import com.wuta.gpuimage.util.OpenGlUtils;
 public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallback
 {
     int NO_IMAGE = OpenGlUtils.NO_TEXTURE;
-
     void setupCamera(Camera camera);
 
     void setupCamera(Camera camera, int degrees, boolean flipHor, boolean flipVer);
@@ -49,4 +48,6 @@ public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallbac
     void restart();
     void crop();
     void change_Resoluton();
+
+    void releaseCamera();
 }

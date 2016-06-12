@@ -41,13 +41,13 @@ public class CameraLoaderImpl implements ICameraLoader
     }
 
     @Override
-    public void onPause() {
-        releaseCamera();
+    public void onPause(Activity activity, IGPUImage image) {
+        releaseCamera(image);
     }
 
     @Override
     public void switchCamera(Activity activity, IGPUImage image) {
-        releaseCamera();
+        releaseCamera(image);
         mCurrentCameraId = (mCurrentCameraId + 1) % mCameraHelper.getNumberOfCameras();
         setUpCamera(mCurrentCameraId, activity, image);
     }
@@ -72,7 +72,7 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.setRecordingHint(true);
         Camera.Size size = parameters.getPreviewSize();
         Log.e("in setUpCamera: size is"," "+size.width+" "+size.height);
-        parameters.setPreviewSize(1920,1080);
+        parameters.setPreviewSize(480, 320);
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);
@@ -95,7 +95,8 @@ public class CameraLoaderImpl implements ICameraLoader
         int orientation = mCameraHelper.getCameraDisplayOrientation(activity, mCurrentCameraId);
         ICameraHelper.CameraInfo2 cameraInfo = mCameraHelper.getCameraInfo(mCurrentCameraId);
         boolean flipHorizontal = cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT;
-        releaseCamera();
+        mCameraInstance.release();
+        mCameraInstance=null;
         mCameraInstance = getCameraInstance(mCurrentCameraId);
         mCameraInstance.setParameters(parameters);
         image.setupCamera(mCameraInstance, orientation, false, flipHorizontal);
@@ -140,7 +141,7 @@ public class CameraLoaderImpl implements ICameraLoader
     {
         if(resolutionFlag && mCameraInstance!=null)
         {
-            releaseCamera();
+            releaseCamera(mIgpuImage);
             mCameraInstance = getCameraInstance(mCurrentCameraId);
             Camera.Parameters parameters = mCameraInstance.getParameters();
             Camera.Size size = parameters.getPreviewSize();
@@ -156,7 +157,7 @@ public class CameraLoaderImpl implements ICameraLoader
         }
         else if(mCameraInstance!=null)
         {
-            releaseCamera();
+            releaseCamera(mIgpuImage);
             mCameraInstance = getCameraInstance(mCurrentCameraId);
             Camera.Parameters parameters = mCameraInstance.getParameters();
             Camera.Size size = parameters.getPreviewSize();
@@ -172,12 +173,52 @@ public class CameraLoaderImpl implements ICameraLoader
         }
         resolutionFlag = !resolutionFlag;
     }
-    private void releaseCamera() {
+    @Override
+    public void save(Activity activity, IGPUImage mIgpuImage)
+    {
+        releaseCamera(mIgpuImage);
+        mCameraInstance = getCameraInstance(mCurrentCameraId);
+        Camera.Parameters parameters = mCameraInstance.getParameters();
+        Camera.Size size = parameters.getPreviewSize();
+        Log.e("setUpCamera out first"," "+size.width+" "+size.height);
+        parameters.setPreviewSize(1920, 1080);
+        mCameraInstance.setParameters(parameters);
+        Camera.Parameters parameters2 = mCameraInstance.getParameters();
+        Camera.Size size2 = parameters.getPreviewSize();
+        Log.e("setUpCamera out second"," "+size2.width+" "+size2.height);
+        //mCameraInstance.setPreviewCallback(null);
+        //mCameraInstance.release();
+        setUpCamera(activity, mIgpuImage);
+    }
+    @Override
+    public void restart(Activity activity, IGPUImage mIgpuImage)
+    {
+        //releaseCamera();
+        mCameraInstance = getCameraInstance(mCurrentCameraId);
+        Camera.Parameters parameters = mCameraInstance.getParameters();
+        Camera.Size size = parameters.getPreviewSize();
+        Log.e("setUpCamera out first"," "+size.width+" "+size.height);
+        parameters.setPreviewSize(480, 320);
+        mCameraInstance.setParameters(parameters);
+        Camera.Parameters parameters2 = mCameraInstance.getParameters();
+        Camera.Size size2 = parameters.getPreviewSize();
+        Log.e("setUpCamera out second"," "+size2.width+" "+size2.height);
+        //mCameraInstance.setPreviewCallback(null);
+        //mCameraInstance.release();
+        setUpCamera(activity, mIgpuImage);
+    }
+    @Override
+    public void releaseCamera(IGPUImage mIgpuImage) {
         if (mCameraInstance == null) {
             return;
         }
-        mCameraInstance.setPreviewCallback(null);
-        mCameraInstance.release();
+        mIgpuImage.releaseCamera();
         mCameraInstance = null;
     }
+    @Override
+    public void restartCamera(Activity activity, IGPUImage image)
+    {
+        setUpCamera(mCurrentCameraId, activity, image);
+    }
+
 }

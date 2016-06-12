@@ -77,12 +77,14 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
         findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mCameraLoader.save(MainActivity.this,mIGPUImage);
                 mIGPUImage.save();
             }
         });
         findViewById(R.id.restart).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mCameraLoader.restart(MainActivity.this,mIGPUImage);
                 mIGPUImage.restart();
             }
         });
@@ -111,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
 
     @Override
     protected void onPause() {
-        mCameraLoader.onPause();
+        mCameraLoader.onPause(this, mIGPUImage);
         super.onPause();
     }
 
@@ -121,4 +123,5 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
         mIGPUImage.setFocus(event);
         return false;
     }
+
 }
