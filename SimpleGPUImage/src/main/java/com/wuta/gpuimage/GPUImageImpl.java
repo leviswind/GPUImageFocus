@@ -167,7 +167,7 @@ public class GPUImageImpl implements IGPUImage
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
-        this(context, view, GPUImageConvertor.ConvertType.SURFACE_TEXTURE);
+        this(context, view, GPUImageConvertor.ConvertType.RAW_NV21_TO_RGBA);
     }
 
     public GPUImageImpl(Context context, GLSurfaceView view, GPUImageConvertor.ConvertType convertType)
@@ -535,7 +535,7 @@ public class GPUImageImpl implements IGPUImage
        // Log.e("data.length",""+data.length);
         if(save_tempflag )
         {
-            if(tempnum<10)
+            if(tempnum<100)
             {
                 tempnum++;
             }else{
@@ -565,7 +565,8 @@ public class GPUImageImpl implements IGPUImage
                 @Override
                 public void run() {
                     //Log.e("In onpreviewframe"," "+mImageWidth+mImageHeight);
-                    //mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
+                    mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
+                    //Log.e("data.length",""+data.length);
                     camera.addCallbackBuffer(data);
                 }
             });
@@ -618,12 +619,9 @@ public class GPUImageImpl implements IGPUImage
                 if(!releaseFlag)
                 {
                     setupSurfaceTexture(camera);
-
                     camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
                     camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
                     camera.addCallbackBuffer(new byte[size.width*size.height*3/2]);
-
-
                     camera.setPreviewCallbackWithBuffer(GPUImageImpl.this);
                     camera.startPreview();
                 }
