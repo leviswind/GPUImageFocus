@@ -1,5 +1,7 @@
 package com.wuta.gpuimage.convert;
 
+import android.util.Log;
+
 import com.wuta.gpuimage.util.OpenGlUtils;
 
 /**
@@ -77,9 +79,12 @@ public class GPUImageConvertor
 
     public int convert(byte [] data, int width, int height)
     {
+        Log.e("before of mRawConvertor","");
         if (mRawConvertor == null) {
+            Log.e("hhehehehehehehheh","");
             return OpenGlUtils.NO_TEXTURE;
         }
+        Log.e("out of mRawConvertor","");
         return mRawConvertor.convert(data, width, height);
     }
 

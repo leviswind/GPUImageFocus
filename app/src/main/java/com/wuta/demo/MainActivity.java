@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener
         findViewById(R.id.save).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mCameraLoader.save(MainActivity.this,mIGPUImage);
+               // mCameraLoader.save(MainActivity.this,mIGPUImage);
                 mIGPUImage.save();
             }
         });

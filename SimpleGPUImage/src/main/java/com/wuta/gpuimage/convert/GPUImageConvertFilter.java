@@ -1,6 +1,7 @@
 package com.wuta.gpuimage.convert;
 
 import android.opengl.GLES20;
+import android.util.Log;
 
 import com.wuta.gpuimage.GPUImageFrameBuffer;
 import com.wuta.gpuimage.Rotation;
@@ -146,7 +147,6 @@ public abstract class GPUImageConvertFilter
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
 
         mFrameBuffer.showFrameBuffer();
-
         return mFrameBuffer.getFrameBufferTextureId();
     }
 

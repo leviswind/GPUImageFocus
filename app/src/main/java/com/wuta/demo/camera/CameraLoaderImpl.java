@@ -2,6 +2,7 @@ package com.wuta.demo.camera;
 
 import android.app.Activity;
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.os.Build;
 import android.util.Log;
@@ -77,11 +78,12 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.setRecordingHint(true);
         Camera.Size size = parameters.getPreviewSize();
         Log.e("in setUpCamera: size is"," "+size.width+" "+size.height);
-        parameters.setPreviewSize(176, 144);
+        parameters.setPreviewSize(1920, 1080);
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);
         parameters.setPictureSize(1920,1080);
+        parameters.setPictureFormat(ImageFormat.JPEG);
         mCameraInstance.setParameters(parameters);
 
         debug(mCameraInstance);
@@ -124,11 +126,17 @@ public class CameraLoaderImpl implements ICameraLoader
         }
 
         List<Camera.Size> supportedSize = parameters.getSupportedPreviewSizes();
+        List<Camera.Size> supportedCameraSize = parameters.getSupportedPictureSizes();
         if (supportedSize != null) {
             for (Camera.Size ss : supportedSize) {
                 Log.e("Camera", "Support Size: " + "(" + ss.width + ", " + ss.height);
             }
         }
+        if (supportedCameraSize != null) {
+        for (Camera.Size ss : supportedCameraSize) {
+            Log.e("Camera", "Support Picture Size: " + "(" + ss.width + ", " + ss.height);
+        }
+    }
     }
 
     /** A safe way to get an instance of the Camera object. */
@@ -187,7 +195,7 @@ public class CameraLoaderImpl implements ICameraLoader
         Camera.Parameters parameters = mCameraInstance.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         Log.e("setUpCamera out first"," "+size.width+" "+size.height);
-        parameters.setPreviewSize(1920, 1080);
+        parameters.setPreviewSize(1920,1080);
         mCameraInstance.setParameters(parameters);
         Camera.Parameters parameters2 = mCameraInstance.getParameters();
         Camera.Size size2 = parameters.getPreviewSize();

@@ -13,6 +13,7 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
+import android.util.Size;
 import android.view.MotionEvent;
 import android.view.ContextThemeWrapper;
 
@@ -87,6 +88,7 @@ public class GPUImageImpl implements IGPUImage
      * has converted texture handle id
      */
     private int mConvertedTextureId = NO_IMAGE;
+    private int mConvertedTextureIdForSave = NO_IMAGE;
 
     /**
      * surfacetexture's texture handle id
@@ -95,6 +97,7 @@ public class GPUImageImpl implements IGPUImage
     private SurfaceTexture mSurfaceTexture = null;
 
     private final GPUImageConvertor mImageConvertor;
+    private final GPUImageConvertor mImageConvertorForSave;
 
     /**
      * runnable queue
@@ -159,6 +162,12 @@ public class GPUImageImpl implements IGPUImage
                                     -temp+center[0], temp+center[1],
                                     temp+center[0], temp+center[1]
     };
+    private float TEXTURE_CORD[] ={
+                                    0.0f, 1.0f,
+                                    0.0f, 0.0f,
+                                    1.0f, 1.0f,
+                                    1.0f, 0.0f
+    };
     public static boolean releaseFlag = false;
     private int mCount;
     private Bitmap bitmap;
@@ -167,7 +176,7 @@ public class GPUImageImpl implements IGPUImage
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
-        this(context, view, GPUImageConvertor.ConvertType.SURFACE_TEXTURE);
+            this(context, view, GPUImageConvertor.ConvertType.RAW_NV21_TO_RGBA);
     }
 
     public GPUImageImpl(Context context, GLSurfaceView view, GPUImageConvertor.ConvertType convertType)
@@ -186,6 +195,7 @@ public class GPUImageImpl implements IGPUImage
         mImageFilter = new GPUImageFilter();
         mImageFilter2 = new GPUImageFilter();
         mImageConvertor = new GPUImageConvertor(convertType);
+        mImageConvertorForSave = new GPUImageConvertor(GPUImageConvertor.ConvertType.RAW_NV21_TO_RGBA);
 
         mRunOnDraw = new LinkedList<Runnable>();
         mRunOnDrawEnd = new LinkedList<Runnable>();
@@ -241,6 +251,7 @@ public class GPUImageImpl implements IGPUImage
         mDrawFilter.init();
         addPicture.init();
         mImageConvertor.initialize();
+        mImageConvertorForSave.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
         mDrawFilter.setPicture(bitmap);
@@ -346,11 +357,12 @@ public class GPUImageImpl implements IGPUImage
         GLRecorder.setRecordOutputFile("/sdcard/glrecord.mp4");     // Set output file path
 
         mImageConvertor.onOutputSizeChanged(width, height);
+        mImageConvertorForSave.onOutputSizeChanged(1080,1920);
 
         GLES20.glUseProgram(mImageFilter.getProgram());
         mImageFilter.onOutputSizeChanged(width, height);
         GLES20.glUseProgram(mImageFilter2.getProgram());
-        mImageFilter2.onOutputSizeChanged(width, height);
+        mImageFilter2.onOutputSizeChanged(1080, 1920);
 
         for(GPUImageFilter filter:vec)
         {
@@ -423,17 +435,10 @@ public class GPUImageImpl implements IGPUImage
             int tempTexture2 = mDrawFilter.onDrawPicture();
             //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
 
-            if(imagefilterFlag)
-            {
-                mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
-                mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-                mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
-            }
-            {
-                mImageFilter2.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
-                mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-                mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
-            }
+            mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
         else
@@ -458,10 +463,16 @@ public class GPUImageImpl implements IGPUImage
 
         if(save_flag)
         {
+            Log.e("onPictureTaken"," "+mConvertedTextureIdForSave);
+            int tempTexture2 = mDrawFilter.onDrawPicture();
+            float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
+            mGLTextureBuffer.put(textureCords);
+            mImageFilter2.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
+            mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             Log.e("save_flag:",""+save_flag);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
-           // addPicture.setPicture(bitmapsave);
+            // addPicture.setPicture(bitmapsave);
             File file = new File("/storage/emulated/0/liwei");
             File file2 = new File("/storage/emulated/0/liwei/1.jpg");
             file.mkdirs();
@@ -482,7 +493,7 @@ public class GPUImageImpl implements IGPUImage
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             draw_flag = false;
             save_flag = false;
-            releaseCamera();
+            //releaseCamera();
         }
     }
     public void set_Crop()
@@ -501,8 +512,8 @@ public class GPUImageImpl implements IGPUImage
     }
     public Bitmap saveChanges()
     {
-        int width = mOutputWidth;
-        int height = mOutputHeight;
+        int width = 1080;
+        int height = 1920;
 
         int size = width * height;
         ByteBuffer buf = ByteBuffer.allocateDirect(size * 4);
@@ -533,17 +544,6 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
        // Log.e("data.length",""+data.length);
-        if(save_tempflag )
-        {
-            if(tempnum<10)
-            {
-                tempnum++;
-            }else{
-                save_flag = true;
-                tempnum =0;
-                save_tempflag = false;
-            }
-        }
         FPSMeter.meter("PreviewFrame");
         if (data.length != mImageHeight*mImageWidth*3/2) {
             Camera.Parameters parameters = camera.getParameters();
@@ -565,6 +565,7 @@ public class GPUImageImpl implements IGPUImage
                 @Override
                 public void run() {
                     //Log.e("In onpreviewframe"," "+mImageWidth+mImageHeight);
+
                     mConvertedTextureId = mImageConvertor.convert(data, tempWidth, tempHeight);
                     //Log.e("data.length",""+data.length);
                     camera.addCallbackBuffer(data);
@@ -755,16 +756,56 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void save()
     {
-        save_tempflag = true;
-        draw_flag = true;
-        imagefilterFlag = false;
+        Log.e("before takepicture",".............");
+        //mCamera.addCallbackBuffer(new byte[1080*1920*3/2]);
+
+        mCamera.takePicture(new Camera.ShutterCallback() {
+            @Override
+            public void onShutter() {
+
+            }
+        }, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken( byte[] data, Camera camera) {
+
+
+            }
+        }, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(final byte[] data, Camera camera) {
+                Log.e("data.length",""+data.length);
+                runOnDraw(new Runnable() {
+                    @Override
+                    public void run() {
+                        File file = new File("/storage/emulated/0/liwei");
+                        File file2 = new File("/storage/emulated/0/liwei/2.jpg");
+                        file.mkdirs();
+                        try{
+                            file2.createNewFile();
+                            FileOutputStream fileout = new FileOutputStream(file2);
+                            fileout.write(data);
+                        }catch(IOException e)
+                        {
+                            e.printStackTrace();
+                        }
+
+                        //YuvImage image = new YuvImage(data, ImageFormat.NV21,1920,1080,null);
+                        Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
+                        mConvertedTextureIdForSave = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE);
+                        Log.e("mConvertedTextureIdheh",""+mConvertedTextureIdForSave);
+                        save_flag = true;
+                        draw_flag = true;
+                    }
+                });
+            }
+        });
+
     }
     @Override
     public void restart()
     {
         save_flag = false;
         draw_flag = true;
-        imagefilterFlag = true;
     }
     @Override
     public void crop()
