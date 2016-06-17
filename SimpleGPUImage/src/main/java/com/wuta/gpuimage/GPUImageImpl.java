@@ -26,6 +26,7 @@ import com.wuta.gpuimage.util.FPSMeter;
 import com.wuta.gpuimage.util.OpenGlUtils;
 import com.wuta.gpuimage.util.TextureRotationUtil;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -391,7 +392,7 @@ public class GPUImageImpl implements IGPUImage
             //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
-            mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            //mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
@@ -417,16 +418,14 @@ public class GPUImageImpl implements IGPUImage
 
         if(save_flag)
         {
-            Log.e("onPictureTaken"," "+mConvertedTextureIdForSave);
             int tempTexture2 = mDrawFilter.onDrawPicture();
             float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
-            mGLTextureBuffer.put(textureCords);
+            mGLTextureBuffer.put(textureCords).position(0);
+            mGLCubeBuffer.put(CUBE).position(0);
             mImageFilter2.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            Log.e("save_flag:",""+save_flag);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
-            // addPicture.setPicture(bitmapsave);
             File file = new File("/storage/emulated/0/liwei");
             File file2 = new File("/storage/emulated/0/liwei/1.jpg");
             file.mkdirs();
@@ -466,8 +465,8 @@ public class GPUImageImpl implements IGPUImage
     }
     public Bitmap saveChanges()
     {
-        int width = 1080;
-        int height = 1920;
+        int width = mPictureHeight;
+        int height = mPictureWidth;
 
         int size = width * height;
         ByteBuffer buf = ByteBuffer.allocateDirect(size * 4);
@@ -480,7 +479,6 @@ public class GPUImageImpl implements IGPUImage
         Bitmap createdBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
         createdBitmap.setPixels(data, size-width, -width, 0, 0, width, height);
         data = null;
-
         short sdata[] = new short[size];
         ShortBuffer sbuf = ShortBuffer.wrap(sdata);
         createdBitmap.copyPixelsToBuffer(sbuf);
@@ -727,6 +725,12 @@ public class GPUImageImpl implements IGPUImage
         });
 
     }
+    public byte[] Bitmap2Bytes(Bitmap bm)
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
     @Override
     public void restart()
     {
@@ -790,6 +794,7 @@ public class GPUImageImpl implements IGPUImage
 
         float[] cube = CUBE;
         float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
+
         if (mScaleType == ScaleType.CENTER_CROP) {
             float distHorizontal = (1 - 1 / ratioWidth) / 2;
             float distVertical = (1 - 1 / ratioHeight) / 2;
