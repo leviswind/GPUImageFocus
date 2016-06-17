@@ -47,13 +47,13 @@ public class TextureRotationUtil {
             1.0f, 0.0f,
             1.0f, 1.0f,
     };
-    public static final float TEXTURE_SAVE[] = {
+    public static final float TEXTURE_SAVE[] = {               //经过framebuffer会上下翻转，故和TEXTURE_NO_ROTATION差了个翻转
             0.0f, 0.0f,
             1.0f, 0.0f,
             0.0f, 1.0f,
             1.0f, 1.0f,
     };
-    public static final float TEXTURE_SAVE_CROP[] ={
+    public static final float TEXTURE_SAVE_CROP[] ={         //裁剪后的TEXTURE
             0.0f, 0.25f,
             1.0f,0.25f,
             0.0f,1.0f,

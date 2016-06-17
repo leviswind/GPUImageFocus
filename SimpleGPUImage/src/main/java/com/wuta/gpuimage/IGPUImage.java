@@ -31,9 +31,7 @@ public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallbac
     void setFilter(GPUImageFilter filter);
 
     void setDrawFilter(GPUImageDrawFilter filter);
-    void setDrawFilter2(GPUImageDrawFilter2 filter2);
 
-    void setDrawPicture(Bitmap picture);
     void setGLSurfaceView(GLSurfaceView surfaceView);
 
     void setBackgroundColor(float red, float green, float blue);

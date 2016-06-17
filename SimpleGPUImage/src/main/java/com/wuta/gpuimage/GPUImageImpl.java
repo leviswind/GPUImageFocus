@@ -68,7 +68,6 @@ public class GPUImageImpl implements IGPUImage
     public final static float [] VERTEX_TRIANGLES = OpenGlUtils.VERTEX_TRIANGLES;
 
     public final static float [] TEXTURE_TRIANGLES = OpenGlUtils.TEXTURE_TRIANGLES;
-    public final static float [] TEXTURE_TRIANGLES2 = OpenGlUtils.TEXTURE_TRIANGLES2;
     public final static float [] TEXTURE_TRIANGLES3 = OpenGlUtils.TEXTURE_TRIANGLES3;
     public final static float [] TEXTURE_TRIANGLES4 = OpenGlUtils.TEXTURE_TRIANGLES4;
 
@@ -113,14 +112,14 @@ public class GPUImageImpl implements IGPUImage
     private final FloatBuffer mSaveTextureBuffer;
     private final FloatBuffer mSaveTextureBuffer2;
     private Vector<GPUImageFilter> vec= new Vector<GPUImageFilter>();
-    private GPUImageFrameBuffer mFrameBuffer;
-    private boolean flag = true;
     private boolean textureCropFlag = false;
 
     private int mOutputWidth;
     private int mOutputHeight;
     private int mImageWidth;
     private int mImageHeight;
+    private int mPictureWidth;
+    private int mPictureHeight;
 
     private Rotation mRotation;
     private boolean mFlipHorizontal;
@@ -130,15 +129,8 @@ public class GPUImageImpl implements IGPUImage
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
     private Triangle mTriangle;
-    private FaceDetector FD;
-    private FaceDetector.Face[] faces;
-    private PointF midpoint = new PointF();
-    private int [] fpx = null;
-    private static int MAX_FACES = 2;
-    private int [] fpy = null;
-    private Triangle mFaceTriangle;
+
     private boolean save_flag = false;
-    private boolean save_tempflag = false;
     private boolean draw_flag = true;
     private  float triangleCoords[] = {   // in counterclockwise order:
             0.0f,  0.0f,
@@ -148,31 +140,20 @@ public class GPUImageImpl implements IGPUImage
             -1.0f,-1.0f,
             0.0f,0.0f
     };
-    private ByteBuffer data;
-    private GPUImageDrawFilter addPicture;
 
     // Set color with red, green, blue and alpha (opacity) values
     private float color[] = { 0.63671875f, 0.76953125f, 0.22265625f, 1.0f };
-
     private static float temp = 0.3f;
     private static float center[] = {0.0f, 0.0f};
-    private float TEXTURE_CUBE[]={
+    private float VERTEX_CUBE[]={
                                     -temp+center[0], -temp+center[1],
                                     temp+center[0], -temp+center[1],
                                     -temp+center[0], temp+center[1],
                                     temp+center[0], temp+center[1]
     };
-    private float TEXTURE_CORD[] ={
-                                    0.0f, 1.0f,
-                                    0.0f, 0.0f,
-                                    1.0f, 1.0f,
-                                    1.0f, 0.0f
-    };
     public static boolean releaseFlag = false;
-    private int mCount;
     private Bitmap bitmap;
     private Bitmap bitmapsave;
-    private boolean imagefilterFlag = true;
 
     public GPUImageImpl(Context context, GLSurfaceView view)
     {
@@ -207,26 +188,23 @@ public class GPUImageImpl implements IGPUImage
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         mGLCubeBuffer.put(CUBE).position(0);
-        mPictureBuffer =ByteBuffer.allocateDirect(TEXTURE_CUBE.length * 4)
+        mPictureBuffer =ByteBuffer.allocateDirect(VERTEX_CUBE.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        mPictureBuffer.put(TEXTURE_CUBE).position(0);
+        mPictureBuffer.put(VERTEX_CUBE).position(0);
         mGLTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        mSaveTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
+        mSaveTextureBuffer = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)        //经过framebuffer会翻转，用于将读入贴图翻转，最后输出到屏幕又翻转回来了
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer();
-        mSaveTextureBuffer2 = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)
+        mSaveTextureBuffer2 = ByteBuffer.allocateDirect(TEXTURE_ROTATED_180.length * 4)      //在ondraw不经过framebuffer时，翻转，用于最后输出到屏幕时翻转从framebuffer读出来的texture
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        mSaveTextureBuffer.put(TEXTURE_SAVE).position(0);
+        mSaveTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
         setRotation(Rotation.NORMAL, false, false);
-        vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));
-        mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES3);
-        addPicture = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2);
-        //FD = new FaceDetector(mOutputWidth,mOutputHeight,MAX_FACES);
-       // vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES2));
+        vec.add(new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES));                //这种配置经过framebufffer，会保持不变，不翻转，用于嘻哈镜，4个三角形，所以参数比较多
+        mDrawFilter = new GPUImageDrawFilter(VERTEX_TRIANGLES,TEXTURE_TRIANGLES);
     }
 
     @Override
@@ -238,7 +216,6 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         mEGLConfig = config;
-        mCount = 0;
         GLES20.glClearColor(mBackgroundRed, mBackgroundGreen, mBackgroundBlue, 1);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
 
@@ -249,13 +226,11 @@ public class GPUImageImpl implements IGPUImage
             filter.init();
         }
         mDrawFilter.init();
-        addPicture.init();
         mImageConvertor.initialize();
         mImageConvertorForSave.initialize();
         mCamera.startPreview();
         mCamera.startFaceDetection();
         mDrawFilter.setPicture(bitmap);
-
         mCamera.setFaceDetectionListener(new Camera.FaceDetectionListener() {
             @Override
             public void onFaceDetection(final Camera.Face[] faces, Camera camera) {
@@ -266,7 +241,6 @@ public class GPUImageImpl implements IGPUImage
                         public void run() {
                             Log.e("face detector","detected face-------------------------------     "+faces[0].rect.left+"  "+faces[0].rect.top+"   "+
                                     faces[0].rect.right+"   "+faces[0].rect.bottom);
-
                             triangleCoords = pixeltotexturecoor(faces[0].rect);
                             String s = "";
                             for(int i =0;i<10;i++)
@@ -281,7 +255,6 @@ public class GPUImageImpl implements IGPUImage
                 }
             }
         });
-
     }
 
     @Override
@@ -295,11 +268,11 @@ public class GPUImageImpl implements IGPUImage
         int AREA_SIZE = 200;
         mCamera.cancelAutoFocus();
         Camera.Parameters p = mCamera.getParameters();
-        Log.e("setFocus","getRawX "+event.getRawX()+"   getRawY "+event.getRawY());
-        Log.e("mOutput","mOutputWidth "+mOutputWidth+"  mOutputHeight: "+mOutputHeight);
+        //Log.e("setFocus","getRawX "+event.getRawX()+"   getRawY "+event.getRawY());
+        //Log.e("mOutput","mOutputWidth "+mOutputWidth+"  mOutputHeight: "+mOutputHeight);
 
         float touchY = -(event.getRawX() / mOutputWidth) * 2000 + 1000;
-        float touchX = (event.getRawY() / mOutputHeight) * 2000 - 1000;
+        float touchX = -(event.getRawY() / mOutputHeight) * 2000 +1000;
         int left = clamp((int) touchX - AREA_SIZE / 2, -1000, 1000);
         int right = clamp(left + AREA_SIZE, -1000, 1000);
         int top = clamp((int) touchY - AREA_SIZE / 2, -1000, 1000);
@@ -312,9 +285,6 @@ public class GPUImageImpl implements IGPUImage
             p.setFocusAreas(areaList);
         }
         List<Camera.Area> area = new ArrayList<Camera.Area>();
-        //area = p.getFocusAreas();
-        //Rect rect2 = area.get(0).rect;
-       // Log.e("area"," "+rect2.left+" "+rect2.right+" "+rect2.top+" "+rect2.bottom);
         if (p.getMaxNumMeteringAreas() > 0) {
             List<Camera.Area> areaList = new ArrayList<Camera.Area>();
             areaList.add(new Camera.Area(rect, 1000));
@@ -349,20 +319,15 @@ public class GPUImageImpl implements IGPUImage
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         mOutputWidth = width;
         mOutputHeight = height;
-        Log.e("mOutputWidth",""+width);
-        Log.e("mOutputHight",""+height);
         GLES20.glViewport(0, 0, width, height);
 
-        GLRecorder.init(width, height, mEGLConfig/*Assign in onSurfaceCreated method*/);
-        GLRecorder.setRecordOutputFile("/sdcard/glrecord.mp4");     // Set output file path
-
         mImageConvertor.onOutputSizeChanged(width, height);
-        mImageConvertorForSave.onOutputSizeChanged(1080,1920);
+        mImageConvertorForSave.onOutputSizeChanged(mPictureHeight,mPictureWidth);
 
         GLES20.glUseProgram(mImageFilter.getProgram());
         mImageFilter.onOutputSizeChanged(width, height);
         GLES20.glUseProgram(mImageFilter2.getProgram());
-        mImageFilter2.onOutputSizeChanged(1080, 1920);
+        mImageFilter2.onOutputSizeChanged(mPictureHeight,mPictureWidth);
 
         for(GPUImageFilter filter:vec)
         {
@@ -371,8 +336,6 @@ public class GPUImageImpl implements IGPUImage
         }
         GLES20.glUseProgram((mDrawFilter.getProgram()));
         mDrawFilter.onOutputSizeChanged(mOutputWidth, mOutputHeight);
-        GLES20.glUseProgram((addPicture.getProgram()));
-        addPicture.onOutputSizeChanged(mOutputWidth, mOutputHeight);
 
         adjustImageScaling();
 
@@ -398,15 +361,7 @@ public class GPUImageImpl implements IGPUImage
                     break;
             }
             int tempTextureId;
-            mCount += 1;
-
-            if (mCount == 200) {
-//            GLRecorder.startRecording();
-            } else if (mCount == 2000) {
-//            GLRecorder.stopRecording();
-            }
-            // Set color with red, green, blue and alpha (opacity) values
-            mTriangle = new Triangle(triangleCoords,color);
+            mTriangle = new Triangle(triangleCoords,color);     //四边形
 
             int size = vec.size();
             int tempTexture;
@@ -419,25 +374,24 @@ public class GPUImageImpl implements IGPUImage
                 tempTextureId = vec.get(i).onDrawPicture();
             }
             center[0]+=0.01;
-            if(center[0]-temp+0.01>1)
+            if(center[0]-temp+0.01>1)                   //贴图向右移动，超出后重新从左边出现
                 center[0] = -1;
 
-            float TEXTURE_CUBE[] = {
+            float VERTEX_CUBE[] = {
                     -temp+center[0], -temp+center[1],
                     temp+center[0], -temp+center[1],
                     -temp+center[0], temp+center[1],
                     temp+center[0], temp+center[1]
             };
             mPictureBuffer.rewind();
-            mPictureBuffer.put(TEXTURE_CUBE).position(0);
+            mPictureBuffer.put(VERTEX_CUBE).position(0);
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
             int tempTexture2 = mDrawFilter.onDrawPicture();
             //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-
             mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
+
             mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
@@ -540,7 +494,6 @@ public class GPUImageImpl implements IGPUImage
         createdBitmap.copyPixelsFromBuffer(sbuf);
         return createdBitmap;
     }
-    private int tempnum = 0;
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
        // Log.e("data.length",""+data.length);
@@ -576,7 +529,6 @@ public class GPUImageImpl implements IGPUImage
             camera.addCallbackBuffer(data);;
         }
     }
-
     @Override
     public void setPreviewSize(int width, int height) {
         if (mCamera == null) {
@@ -600,8 +552,13 @@ public class GPUImageImpl implements IGPUImage
     public void setupCamera(final Camera camera, int degrees, boolean flipHor, boolean flipVer) {
         mCamera = camera;
         final Camera.Size size = camera.getParameters().getPreviewSize();
+        final Camera.Size picturesize = camera.getParameters().getPictureSize();
         mImageWidth = size.width;
         mImageHeight = size.height;
+        mPictureWidth = picturesize.width;
+        mPictureHeight = picturesize.height;
+        Log.e("mPictureWidth",""+mPictureWidth);
+        Log.e("mPictureHeight",""+mPictureHeight);
 //        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
 
         /**
@@ -693,33 +650,6 @@ public class GPUImageImpl implements IGPUImage
     }
 
     @Override
-    public void setDrawFilter2(final GPUImageDrawFilter2 filter) {
-        runOnDraw(new Runnable() {
-            @Override
-            public void run() {
-                final GPUImageDrawFilter2 oldFilter = mDrawFilter2;
-                mDrawFilter2 = filter;
-                if (oldFilter != null) {
-                    oldFilter.destroy();
-                }
-                mDrawFilter2.init();
-                GLES20.glUseProgram((mDrawFilter2.getProgram()));
-                mDrawFilter2.onOutputSizeChanged(mOutputWidth, mOutputHeight);
-            }
-        });
-    }
-
-    @Override
-    public void setDrawPicture(final Bitmap picture) {
-        runOnDraw(new Runnable() {
-            @Override
-            public void run() {
-                mDrawFilter.setPicture(picture);
-            }
-        });
-    }
-
-    @Override
     public void setGLSurfaceView(GLSurfaceView surfaceView) {
         mGLSurfaceView = surfaceView;
         mGLSurfaceView.setEGLContextClientVersion(2);
@@ -756,9 +686,6 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void save()
     {
-        Log.e("before takepicture",".............");
-        //mCamera.addCallbackBuffer(new byte[1080*1920*3/2]);
-
         mCamera.takePicture(new Camera.ShutterCallback() {
             @Override
             public void onShutter() {
@@ -788,7 +715,6 @@ public class GPUImageImpl implements IGPUImage
                         {
                             e.printStackTrace();
                         }
-
                         //YuvImage image = new YuvImage(data, ImageFormat.NV21,1920,1080,null);
                         Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
                         mConvertedTextureIdForSave = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE);

@@ -38,7 +38,7 @@ public class OpenGlUtils {
             -1.0f, 1.0f,
             1.0f, 1.0f,
     };
-    public static final float VERTEX_CUBE_CROP[]={
+    public static final float VERTEX_CUBE_CROP[]={               //用于截断图像的输出
             -1.0f,-0.5f,
             1.0f,-0.5f,
             -1.0f,1.0f,
@@ -59,39 +59,8 @@ public class OpenGlUtils {
             -1.0f, -1.0f,
             0.0f, 0.0f
     };
-    public static final float CENTER[] = {0.5f,0.5f};
+    public static final float CENTER[] = {0.5f,0.5f};          //嘻哈镜的中心点
     public static final float CENTER2[] = {0.5f,0.5f};
-    /*
-    public static final float TEXTURE_TRIANGLES[] = {
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            CENTER[0],CENTER[1],
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            CENTER[0],CENTER[1],
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            CENTER[0],CENTER[1],
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            CENTER[0],CENTER[1],
-    };
-
-    public static final float TEXTURE_TRIANGLES2[] = {
-            0.0f, 1.0f,
-            0.0f, 0.0f,
-            CENTER2[0],CENTER2[1],
-            0.0f, 0.0f,
-            1.0f, 0.0f,
-            CENTER2[0],CENTER2[1],
-            1.0f, 0.0f,
-            1.0f, 1.0f,
-            CENTER2[0],CENTER2[1],
-            1.0f, 1.0f,
-            0.0f, 1.0f,
-            CENTER2[0],CENTER2[1],
-    };
-    */
     public static final float TEXTURE_TRIANGLES4[] = {
             1.0f, 0.0f,
             1.0f, 1.0f,
@@ -148,7 +117,6 @@ public class OpenGlUtils {
             0.0f, 1.0f,
             CENTER2[0],CENTER2[1],
     };
-
 
     public static int loadTexture(final Bitmap img, final int usedTexId) {
         return loadTexture(img, usedTexId, true);
