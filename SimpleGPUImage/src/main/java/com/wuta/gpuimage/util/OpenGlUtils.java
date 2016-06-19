@@ -148,6 +148,7 @@ public class OpenGlUtils {
         return textures[0];
     }
 
+
     public static int loadTexture(final IntBuffer data, final Size size, final int usedTexId) {
         int textures[] = new int[1];
         if (usedTexId == NO_TEXTURE) {

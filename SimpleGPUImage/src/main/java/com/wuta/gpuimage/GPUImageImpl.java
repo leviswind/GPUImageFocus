@@ -328,7 +328,9 @@ public class GPUImageImpl implements IGPUImage
         GLES20.glUseProgram(mImageFilter.getProgram());
         mImageFilter.onOutputSizeChanged(width, height);
         GLES20.glUseProgram(mImageFilter2.getProgram());
-        mImageFilter2.onOutputSizeChanged(mPictureHeight,mPictureWidth);
+        mImageFilter2.onOutputSizeChanged(720,1280);
+        Log.e("width",""+width+"  height"+height);
+
 
         for(GPUImageFilter filter:vec)
         {
@@ -392,7 +394,7 @@ public class GPUImageImpl implements IGPUImage
             //mImageFilter.onDraw(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
-            //mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
@@ -409,7 +411,11 @@ public class GPUImageImpl implements IGPUImage
                     }
                     break;
             }
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+            float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
+            mGLTextureBuffer.put(textureCords).position(0);
+            mGLCubeBuffer.put(CUBE).position(0);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer, mSaveTextureBuffer2);
+
             //int tempTextureId; //方法二,有闪烁错误
             //tempTextureId = addPicture.onDrawPicture();
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
@@ -421,13 +427,23 @@ public class GPUImageImpl implements IGPUImage
             int tempTexture2 = mDrawFilter.onDrawPicture();
             float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
             mGLTextureBuffer.put(textureCords).position(0);
-            mGLCubeBuffer.put(CUBE).position(0);
+            float[] cube = {-1.0f , -1.0f,
+                     (float)mPictureHeight / mOutputWidth * 2.0f-1.0f , -1.0f,
+                             -1.0f, (float)mPictureWidth / mOutputHeight * 2 - 1.0f,
+                      (float)mPictureHeight / mOutputWidth * 2.0f-1.0f, (float) mPictureWidth / mOutputHeight * 2.0f - 1.0f
+                     };
+            String s="";
+            for(int i=0;i<8;i++)
+                s+=cube[i]+" ";
+            Log.e("cube",s);
+            mGLCubeBuffer.put(cube).position(0);
+            //mImageFilter.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter2.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
             File file = new File("/storage/emulated/0/liwei");
-            File file2 = new File("/storage/emulated/0/liwei/1.jpg");
+            File file2 = new File("/storage/emulated/0/liwei/5.jpg");
             file.mkdirs();
             try{
                 file2.createNewFile();
@@ -465,8 +481,8 @@ public class GPUImageImpl implements IGPUImage
     }
     public Bitmap saveChanges()
     {
-        int width = mPictureHeight;
-        int height = mPictureWidth;
+        int width = 720;
+        int height = 1080;
 
         int size = width * height;
         ByteBuffer buf = ByteBuffer.allocateDirect(size * 4);
@@ -703,7 +719,7 @@ public class GPUImageImpl implements IGPUImage
                     @Override
                     public void run() {
                         File file = new File("/storage/emulated/0/liwei");
-                        File file2 = new File("/storage/emulated/0/liwei/2.jpg");
+                        File file2 = new File("/storage/emulated/0/liwei/4.jpg");
                         file.mkdirs();
                         try{
                             file2.createNewFile();

@@ -82,7 +82,7 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);
-        parameters.setPictureSize(1920,1080);
+        parameters.setPictureSize(1280,720);
         parameters.setPictureFormat(ImageFormat.JPEG);
         mCameraInstance.setParameters(parameters);
 
@@ -208,18 +208,7 @@ public class CameraLoaderImpl implements ICameraLoader
     public void restart(Activity activity, IGPUImage mIgpuImage)
     {
         //releaseCamera();
-        mCameraInstance = getCameraInstance(mCurrentCameraId);
-        Camera.Parameters parameters = mCameraInstance.getParameters();
-        Camera.Size size = parameters.getPreviewSize();
-        Log.e("setUpCamera out first"," "+size.width+" "+size.height);
-        parameters.setPreviewSize(480, 320);
-        mCameraInstance.setParameters(parameters);
-        Camera.Parameters parameters2 = mCameraInstance.getParameters();
-        Camera.Size size2 = parameters.getPreviewSize();
-        Log.e("setUpCamera out second"," "+size2.width+" "+size2.height);
-        //mCameraInstance.setPreviewCallback(null);
-        //mCameraInstance.release();
-        setUpCamera(activity, mIgpuImage);
+        restartCamera(activity, mIgpuImage);
     }
     @Override
     public void releaseCamera(IGPUImage mIgpuImage) {
