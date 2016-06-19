@@ -1,8 +1,8 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0099cc"
+    android:background="#f2f8fa"
     tools:context=".MainActivity">
 
     <android.opengl.GLSurfaceView
@@ -13,36 +13,89 @@
         android:id="@+id/switcher"
         android:layout_gravity="bottom"
         android:text="change"
+        android:layout_y="0dip"
+        android:layout_x="0dip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
     <Button
         android:id="@+id/save"
-        android:layout_gravity="bottom|center"
+        android:layout_gravity="center_vertical"
         android:text="save"
+        android:layout_y="520dip"
+        android:layout_x="0dip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/crop"
+        android:text="crop"
+        android:layout_y="520dip"
+        android:layout_x="150dip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
     <Button
         android:id="@+id/restart"
         android:layout_gravity="bottom|right"
         android:text="restart"
+        android:layout_y="520dip"
+        android:layout_x="300dip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-    <Button
-        android:id="@+id/crop"
-        android:layout_gravity="top|left"
-        android:text="crop"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+
     <Button
         android:id="@+id/Resolution"
         android:layout_gravity="top|right"
         android:text="Resolution"
+        android:layout_y="0dip"
+        android:layout_x="280dip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <Button
         android:id="@+id/takephoto"
         android:layout_gravity="top|center"
         android:text="takephoto"
+        android:layout_y="0dip"
+        android:layout_x="150dip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-</FrameLayout>
+
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/v"
+        android:layout_y="400dip"
+        android:layout_x="50dip"
+        android:textSize="60px"
+        android:textColor="#bb1515"></TextView>
+
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:id="@+id/vx"
+        android:layout_y="100dip"
+        android:layout_x="50dip"
+        android:textSize="50px"
+        android:textColor="#fcfafa" />
+
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|center"
+        android:id="@+id/vy"
+        android:layout_y="200dip"
+        android:layout_x="50dip"
+        android:textSize="50px"
+        android:textColor="#f9f4f4" />
+    <TextView
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|right"
+        android:layout_y="300dip"
+        android:layout_x="50dip"
+        android:id="@+id/vz"
+        android:textSize="50px"
+        android:textColor="#f9f3f3" />
+</AbsoluteLayout>

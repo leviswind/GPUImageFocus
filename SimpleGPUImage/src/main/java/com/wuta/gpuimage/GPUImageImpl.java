@@ -1,6 +1,7 @@
 package com.wuta.gpuimage;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
@@ -9,9 +10,12 @@ import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.media.FaceDetector;
+import android.net.Uri;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Size;
 import android.view.MotionEvent;
@@ -396,7 +400,7 @@ public class GPUImageImpl implements IGPUImage
             mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
             mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+           // mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
         else
@@ -412,10 +416,7 @@ public class GPUImageImpl implements IGPUImage
                     }
                     break;
             }
-            float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
-            mGLTextureBuffer.put(textureCords).position(0);
-            mGLCubeBuffer.put(CUBE).position(0);
-            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer, mSaveTextureBuffer2);
+           // mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
 
             //int tempTextureId; //方法二,有闪烁错误
             //tempTextureId = addPicture.onDrawPicture();
@@ -425,6 +426,8 @@ public class GPUImageImpl implements IGPUImage
 
         if(save_flag)
         {
+
+            save_flag = false;
             int tempTexture2 = mDrawFilter.onDrawPicture();
             float[] textureCords = TextureRotationUtil.getRotation(mRotation, mFlipHorizontal, mFlipVertical);
             mGLTextureBuffer.put(textureCords).position(0);
@@ -450,6 +453,7 @@ public class GPUImageImpl implements IGPUImage
             mPictureBuffer.put(VERTEX_CUBE).position(0);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
+            /*
             File file = new File("/storage/emulated/0/liwei");
             File file2 = new File("/storage/emulated/0/liwei/5.jpg");
             file.mkdirs();
@@ -466,10 +470,10 @@ public class GPUImageImpl implements IGPUImage
             }catch(IOException e)
             {
 
-            }
+            }*/
+            saveImageToGallery(mContext,bitmapsave);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-            draw_flag = false;
-            save_flag = false;
+
             //releaseCamera();
         }
     }
@@ -768,6 +772,7 @@ public class GPUImageImpl implements IGPUImage
                 runOnDraw(new Runnable() {
                     @Override
                     public void run() {
+                        /*
                         File file = new File("/storage/emulated/0/liwei");
                         File file2 = new File("/storage/emulated/0/liwei/4.jpg");
                         file.mkdirs();
@@ -778,13 +783,14 @@ public class GPUImageImpl implements IGPUImage
                         }catch(IOException e)
                         {
                             e.printStackTrace();
-                        }
+                        }*/
                         //YuvImage image = new YuvImage(data, ImageFormat.NV21,1920,1080,null);
                         Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
+                        saveImageToGallery(mContext,picture);
                         mConvertedTextureIdForSave = OpenGlUtils.loadTexture(picture, OpenGlUtils.NO_TEXTURE);
                         Log.e("mConvertedTextureIdheh",""+mConvertedTextureIdForSave);
                         save_flag = true;
-                        draw_flag = true;
+                        draw_flag = false;
                     }
                 });
             }
@@ -839,7 +845,35 @@ public class GPUImageImpl implements IGPUImage
         textureFlag = !textureFlag;
         adjustImageScaling();
     }
+    public static void saveImageToGallery(Context context, Bitmap bmp) {
+        // 首先保存图片
+        File appDir = new File("/storage/emulated/0/liwei");
+        if (!appDir.exists()) {
+            appDir.mkdir();
+        }
+        String fileName = System.currentTimeMillis() + ".jpg";
+        File file = new File(appDir, fileName);
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+            fos.flush();
+            fos.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        // 其次把文件插入到系统图库
+        try {
+            MediaStore.Images.Media.insertImage(context.getContentResolver(),
+                    file.getAbsolutePath(), fileName, null);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        // 最后通知图库更新
+        context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + fileName)));
+    }
     private void adjustImageScaling() {
         float outputWidth = mOutputWidth;
         float outputHeight = mOutputHeight;
