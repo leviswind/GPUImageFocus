@@ -82,7 +82,7 @@ public class CameraLoaderImpl implements ICameraLoader
 //        parameters.setPreviewFpsRange(30000, 30000);
 //        parameters.setPreviewFrameRate(30);
 //        parameters.setPreviewFormat(ImageFormat.NV21);
-        parameters.setPictureSize(1280,720);
+        parameters.setPictureSize(1280,960);
         parameters.setPictureFormat(ImageFormat.JPEG);
         mCameraInstance.setParameters(parameters);
 

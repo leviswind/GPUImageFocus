@@ -78,7 +78,7 @@ public class GPUImageImpl implements IGPUImage
     protected GPUImageFilter mImageFilter2;
     protected GPUImageDrawFilter mDrawFilter;
     protected GPUImageDrawFilter2 mDrawFilter2;
-    protected ScaleType mScaleType = ScaleType.CENTER_CROP;
+    protected ScaleType mScaleType = ScaleType.CENTER_INSIDE;
 
     protected Camera mCamera;
 
@@ -328,7 +328,7 @@ public class GPUImageImpl implements IGPUImage
         GLES20.glUseProgram(mImageFilter.getProgram());
         mImageFilter.onOutputSizeChanged(width, height);
         GLES20.glUseProgram(mImageFilter2.getProgram());
-        mImageFilter2.onOutputSizeChanged(720,1280);
+        mImageFilter2.onOutputSizeChanged(mPictureHeight,mPictureWidth);
         Log.e("width",""+width+"  height"+height);
 
 
@@ -350,6 +350,12 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void onDrawFrame(GL10 gl) {
         set_Crop();
+        float VERTEX_CUBE[] = {
+                -temp+center[0], -temp+center[1],
+                temp+center[0], -temp+center[1],
+                -temp+center[0], temp+center[1],
+                temp+center[0], temp+center[1]
+        };
         if(draw_flag)
         {
             FPSMeter.meter("DrawFrame");
@@ -380,12 +386,7 @@ public class GPUImageImpl implements IGPUImage
             if(center[0]-temp+0.01>1)                   //贴图向右移动，超出后重新从左边出现
                 center[0] = -1;
 
-            float VERTEX_CUBE[] = {
-                    -temp+center[0], -temp+center[1],
-                    temp+center[0], -temp+center[1],
-                    -temp+center[0], temp+center[1],
-                    temp+center[0], temp+center[1]
-            };
+
             mPictureBuffer.rewind();
             mPictureBuffer.put(VERTEX_CUBE).position(0);
             //mImageFilter.onDraw(tempTextureId, mGLCubeBuffer, mGLTextureBuffer);
@@ -436,10 +437,17 @@ public class GPUImageImpl implements IGPUImage
             for(int i=0;i<8;i++)
                 s+=cube[i]+" ";
             Log.e("cube",s);
+            String s1="";
+            for(int i=0;i<8;i++)
+                s1+=transform(CUBE)[i]+" ";
+            Log.e("transform(CUBE)",s1+"length"+transform(CUBE).length);
+            float Cube1[] = transform(CUBE);
             mGLCubeBuffer.put(cube).position(0);
+            mPictureBuffer.put(verticalTransform(VERTEX_CUBE)).position(0);
             //mImageFilter.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter2.onDrawFrameBuffer(mConvertedTextureIdForSave, mGLCubeBuffer, mGLTextureBuffer);
             mImageFilter2.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
+            mPictureBuffer.put(VERTEX_CUBE).position(0);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,mImageFilter2.getFrameBufferId());
             bitmapsave = saveChanges();
             File file = new File("/storage/emulated/0/liwei");
@@ -465,6 +473,48 @@ public class GPUImageImpl implements IGPUImage
             //releaseCamera();
         }
     }
+    private float [] transform(float[] src)
+    {
+        float ratio1 = (float)mPictureHeight/mOutputWidth;
+        float ratio2 = (float)mPictureWidth/mOutputHeight;
+        float [] des = {-1.0f+(src[0]+1.0f)*ratio1, -1.0f+(src[1]+1.0f)*ratio2,
+                        -1.0f+(src[2]+1.0f)*ratio1, -1.0f+(src[3]+1.0f)*ratio2,
+                        -1.0f+(src[4]+1.0f)*ratio1, -1.0f+(src[5]+1.0f)*ratio2,
+                        -1.0f+(src[6]+1.0f)*ratio1, -1.0f+(src[7]+1.0f)*ratio2
+        };
+        return des;
+    }
+    private float [] verticalTransform(float [] src)
+    {
+        float ratio3 = (float)mOutputWidth / mImageHeight;
+        float ratio4 = (float)mOutputHeight / mImageWidth;
+        float ratio = ratio4/ratio3;
+        Log.e("mOutputWidth:",""+mOutputWidth);
+        Log.e("mImageWidth",""+mImageWidth);
+        Log.e("mOutputHeight:",""+mOutputHeight);
+        Log.e("mImageHeight",""+mImageHeight);
+        Log.e("ratio3",""+ratio3);
+        Log.e("ratio4",""+ratio4);
+        Log.e("ratio......",""+ratio);
+        String s="";
+        for(int i=0;i<8;i++)
+            s+=src[i]+" ";
+        Log.e("src",s);
+        float ratio1 = (float)mPictureHeight/mOutputWidth;
+        float ratio2 = (float)mPictureWidth/mOutputHeight;
+        Log.e("ratio1",""+ratio1);
+        Log.e("ratio2",""+ratio2);
+        float [] des = {-1.0f+(src[0]+1.0f)*ratio1, -1.0f+(src[1]*ratio+1.0f)*ratio2,
+                -1.0f+(src[2]+1.0f)*ratio1, -1.0f+(src[3]*ratio+1.0f)*ratio2,
+                -1.0f+(src[4]+1.0f)*ratio1, -1.0f+(src[5]*ratio+1.0f)*ratio2,
+                -1.0f+(src[6]+1.0f)*ratio1, -1.0f+(src[7]*ratio+1.0f)*ratio2
+        };
+        String s1="";
+        for(int i=0;i<8;i++)
+            s1+=des[i]+" ";
+        Log.e("des",s1);
+        return des;
+    }
     public void set_Crop()
     {
         if(textureCropFlag)
@@ -481,8 +531,8 @@ public class GPUImageImpl implements IGPUImage
     }
     public Bitmap saveChanges()
     {
-        int width = 720;
-        int height = 1080;
+        int width = mPictureHeight;
+        int height = mPictureWidth;
 
         int size = width * height;
         ByteBuffer buf = ByteBuffer.allocateDirect(size * 4);
@@ -801,9 +851,9 @@ public class GPUImageImpl implements IGPUImage
 
         float ratio1 = outputWidth / mImageWidth;
         float ratio2 = outputHeight / mImageHeight;
-        float ratioMax = Math.max(ratio1, ratio2);
-        int imageWidthNew = Math.round(mImageWidth * ratioMax);
-        int imageHeightNew = Math.round(mImageHeight * ratioMax);
+        Log.e("ratio1",""+ratio1+" ratio2"+ratio2);
+        int imageWidthNew = Math.round(mImageWidth * ratio2);
+        int imageHeightNew = Math.round(mImageHeight * ratio2);
 
         float ratioWidth = imageWidthNew / outputWidth;
         float ratioHeight = imageHeightNew / outputHeight;
@@ -822,10 +872,10 @@ public class GPUImageImpl implements IGPUImage
             };
         } else {
             cube = new float[]{
-                    CUBE[0] / ratioHeight, CUBE[1] / ratioWidth,
-                    CUBE[2] / ratioHeight, CUBE[3] / ratioWidth,
-                    CUBE[4] / ratioHeight, CUBE[5] / ratioWidth,
-                    CUBE[6] / ratioHeight, CUBE[7] / ratioWidth,
+                    CUBE[0] * ratioHeight, CUBE[1] * ratioWidth,
+                    CUBE[2] * ratioHeight, CUBE[3] * ratioWidth,
+                    CUBE[4] * ratioHeight, CUBE[5] * ratioWidth,
+                    CUBE[6] * ratioHeight, CUBE[7] * ratioWidth,
             };
 
         }
