@@ -1,6 +1,8 @@
 package com.wuta.demo;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
@@ -13,6 +15,7 @@ import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.util.Log;
@@ -39,7 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements OnTouchListener,SensorEventListener
+public class MainActivity extends AppCompatActivity implements OnTouchListener,SensorEventListener,GestureDetector.OnGestureListener
 {
 
 //    private GPUImage mGPUImage;
@@ -48,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
     private GPUImageDrawFilter mDrawFilter;
     private SensorManager sensorManager = null;
     private Sensor gyroSensor = null;
+    private Sensor lightSensor = null;
     private TextView vX;
     private TextView vY;
     private TextView vZ;
@@ -56,9 +60,11 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
     private static final float NS2S = 1.0f / 1000000000.0f;
     private float timestamp;
     private float[] angle = new float[3];
+    private StringBuffer sb;
 
-   // private GPUImageDrawFilter2 mDrawFilter2;
-
+    // private GPUImageDrawFilter2 mDrawFilter2;
+    private MyView myView;
+    GestureDetector gestureDetector;
     private IGPUImage mIGPUImage;
     @Override
     public void onCreate(final Bundle savedInstanceState) {
@@ -70,6 +76,7 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
         angle[1] = 0;
         angle[2] = 0;
         timestamp = 0;
+        sb = new StringBuffer();
         GLSurfaceView view = (GLSurfaceView) findViewById(R.id.surfaceView);
         mIGPUImage = new GPUImageImpl(this, view
         );//, GPUImageConvertor.ConvertType.SURFACE_TEXTURE);
@@ -163,16 +170,61 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
                 });
             }
         });
-        vX = (TextView) findViewById(R.id.vx);
-        vY = (TextView)findViewById(R.id.vy);
-        vZ = (TextView)findViewById(R.id.vz);
+        findViewById(R.id.takephoto).setVisibility(View.INVISIBLE);
+
         v = (TextView)findViewById(R.id.v);
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         gyroSensor = sensorManager
                 .getDefaultSensor(Sensor.TYPE_ORIENTATION);
-        vX.setText("!!!!!!");
+        lightSensor=sensorManager.getDefaultSensor((Sensor.TYPE_LIGHT));
+        myView = (MyView) findViewById(R.id.myview);
+        gestureDetector = new GestureDetector(this);
+        myView.setOnTouchListener(this);
+        myView.setLongClickable(true);
+    }
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        // TODO Auto-generated method stub
+        if(event.getAction()==MotionEvent.ACTION_DOWN){
+            myView.setXY(event.getX(),event.getY());
+            Log.e("action_down","  ------");
+            mIGPUImage.setFocus(event);
+        }
+        if(event.getAction()==MotionEvent.ACTION_UP){
+            Log.e("on down","");
+            myView.setInvisible();
+        }
+        mIGPUImage.setExposurecompensation((int)(myView.get_Ybias()*3/50));
+        myView.setVisible(true);
+        return gestureDetector.onTouchEvent(event);
+    }
+    @Override
+    public boolean onDown(MotionEvent e)
+    {
+        Log.e("on down","");
+        return false;
+    }
+    @Override
+    public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,float distanceY) {
+        myView.setY(distanceY);
+        Log.e("distanceY",""+distanceY);
+        return false;
+    }
+    @Override
+    public void onShowPress(MotionEvent e) {
 
+    }
+    @Override
+    public void onLongPress(MotionEvent e){
 
+    }
+    @Override
+    public boolean onSingleTapUp(MotionEvent e){
+        return false;
+    }
+    @Override
+    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,float velocityY){
+        return false;
     }
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -210,10 +262,19 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
 //
 //      roll：y轴和水平面的夹角，由于历史原因，范围为-90°至90°。
 //      当x轴向z轴移动时，角度为正值。
+        float acc = event.accuracy;
+        //获取光线强度
+        float lux = event.values[0];
 
-        vX.setText("Orientation Z: " + event.values[0]);
-        vY.setText("Orientation X: " + event.values[1]);
-        vZ.setText("Orientation Y: " + event.values[2]);
+        sb.append("acc ----> " + acc);
+        sb.append("\n");
+        sb.append("lux ----> " + lux);
+        sb.append("\n");
+
+
+        sb.delete(1,sb.length()-1);
+        //vX.setText("Orientation Z: " + event.values[0]);
+
         if(event.values[2]>=45)
         {
             v.setText("左倾");
@@ -248,11 +309,5 @@ public class MainActivity extends AppCompatActivity implements OnTouchListener,S
         sensorManager.unregisterListener(this); // 解除监听器注册
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        Log.e("Camera","entering to the onTouch events");
-        mIGPUImage.setFocus(event);
-        return false;
-    }
 
 }

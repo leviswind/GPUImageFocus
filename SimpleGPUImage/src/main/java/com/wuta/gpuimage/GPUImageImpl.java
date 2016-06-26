@@ -268,6 +268,13 @@ public class GPUImageImpl implements IGPUImage
         setFocus(event, mCamera);
     }
     @Override
+    public void setExposurecompensation(int ep)
+    {
+        Camera.Parameters parameters = mCamera.getParameters();
+        parameters.setExposureCompensation(ep);
+        mCamera.setParameters(parameters);
+    }
+    @Override
     public void setFocus(MotionEvent event, Camera mCamera)
     {
         int AREA_SIZE = 200;
@@ -362,7 +369,7 @@ public class GPUImageImpl implements IGPUImage
         };
         if(draw_flag)
         {
-            FPSMeter.meter("DrawFrame");
+            //FPSMeter.meter("DrawFrame");
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
             runAll(mRunOnDraw);
             switch (mImageConvertor.getConvertType()) {
@@ -400,12 +407,12 @@ public class GPUImageImpl implements IGPUImage
             mImageFilter.onDrawFrameBuffer(mConvertedTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
             mImageFilter.onDrawFrameBuffer(tempTexture2, mPictureBuffer, mSaveTextureBuffer);
-           // mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+            mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
             runAll(mRunOnDrawEnd);
         }
         else
         {
-            FPSMeter.meter("DrawFrame");
+            //FPSMeter.meter("DrawFrame");
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
             runAll(mRunOnDraw);
             switch (mImageConvertor.getConvertType()) {
@@ -416,7 +423,7 @@ public class GPUImageImpl implements IGPUImage
                     }
                     break;
             }
-           // mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
+           mImageFilter.onDraw(mImageFilter.getFrameBufferTexture(), mGLCubeBuffer2, mSaveTextureBuffer2);
 
             //int tempTextureId; //方法二,有闪烁错误
             //tempTextureId = addPicture.onDrawPicture();
@@ -565,7 +572,7 @@ public class GPUImageImpl implements IGPUImage
     @Override
     public void onPreviewFrame(final byte[] data, final Camera camera) {
        // Log.e("data.length",""+data.length);
-        FPSMeter.meter("PreviewFrame");
+       // FPSMeter.meter("PreviewFrame");
         if (data.length != mImageHeight*mImageWidth*3/2) {
             Camera.Parameters parameters = camera.getParameters();
             Camera.Size previewSize = parameters.getPreviewSize();

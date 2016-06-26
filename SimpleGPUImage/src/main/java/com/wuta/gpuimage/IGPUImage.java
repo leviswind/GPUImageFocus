@@ -46,6 +46,6 @@ public interface IGPUImage extends GLSurfaceView.Renderer, Camera.PreviewCallbac
     void restart();
     void crop();
     void change_Resoluton();
-
+    void setExposurecompensation(int i);
     void releaseCamera();
 }
