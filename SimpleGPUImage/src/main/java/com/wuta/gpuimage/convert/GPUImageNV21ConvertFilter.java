@@ -20,14 +20,14 @@ public class GPUImageNV21ConvertFilter extends GPUImageConvertFilter
             "varying highp vec2 textureCoordinate;\n" +
             "\n" +
             "const mat3 yuv2rgb = mat3(\n" +
-            "        1, 0, 1.2802,\n" +
-            "        1, -0.214821, -0.380589,\n" +
-            "        1, 2.127982, 0\n" +
+            "        1, 0, 1.4075,\n" +
+            "        1, -0.3455, -0.7169,\n" +
+            "        1, 1.779, 0\n" +
             ");\n" +
             "\n" +
             "void main() {\n" +
             "   vec3 yuv = vec3(\n" +
-            "1.1643 * (texture2D(mGLUniformTextureY, textureCoordinate).r - 0.0625),\n" +
+            "texture2D(mGLUniformTextureY, textureCoordinate).r ,\n" +
             "texture2D(mGLUniformTextureUV, textureCoordinate).a - 0.5,\n" +
             "texture2D(mGLUniformTextureUV, textureCoordinate).r - 0.5\n" +
             "   );\n" +
